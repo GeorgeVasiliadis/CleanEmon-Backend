@@ -213,6 +213,26 @@ def create_app():
 
         return get_date_consumption(parsed_date, from_cache, simplify, db=dev_id)
 
+
+    @app.get("/dev_id/{dev_id}/json/last_month/consumption", tags=["Views"])
+    def get_json_last_month_consumption(dev_id: str = None, from_cache: bool = False, simplify: bool = False):
+        """Returns the power consumption of from the first day until the last day of last month.
+        - **{dev_id}**: The dev_id of the device.
+        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
+        data will be looked up in cache and then, if they are not found, fetched from the central database
+        - **simplify**: If set to True, only the pure numerical value will be returned
+        """
+        check_device_existence(dev_id)
+        days= get_last_month_days()
+        consumptions = [get_date_consumption(_.strftime('%Y-%m-%d'), from_cache, True, db=dev_id) for _ in days]
+        if simplify:
+            return sum(consumptions)
+        return {"consumption": sum(consumptions),
+                "unit": "kwh",
+                "month" : days[0].strftime('%B'),
+                "missing_data" : True if 0 in consumptions else False
+        }
+
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
     def get_json_date_mean_consumption(dev_id: str = None, date: str = None, from_cache: bool = False):
         """Returns the power consumption over the size of the building for the given date.
@@ -253,3 +273,12 @@ def create_app():
         set_meta_field(field, value, db=dev_id)
 
     return app
+
+def get_last_month_days():
+    end_last_month = datetime.date.today().replace(day=1) - datetime.timedelta(days=1)  # last day of last month
+    start_last_month = end_last_month.replace(day=1)  # first day of the last month
+    delta = end_last_month - start_last_month
+
+    days = [start_last_month + datetime.timedelta(days=i) for i in range(delta.days + 1)]
+    return days
+
