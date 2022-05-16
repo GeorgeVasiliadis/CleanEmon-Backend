@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+
+.idea
+
+cache
+
+db.cfg
+emon.cfg
+schema.json
