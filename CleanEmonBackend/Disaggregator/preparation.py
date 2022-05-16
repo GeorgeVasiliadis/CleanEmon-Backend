@@ -62,7 +62,7 @@ def good_df_factory(df: pd.DataFrame) -> pd.DataFrame:
     return good_df
 
 
-def date_to_input_file(date: str) -> None:
+def date_to_input_file(date: str) -> str:
     """
     Args:
         - date :: A string in YYYY-MM-DD format
@@ -89,6 +89,7 @@ def date_to_input_file(date: str) -> None:
 
     # Create input file
     df.to_csv(NILM_INPUT_FILE_PATH, index=False)
+    return NILM_INPUT_FILE_PATH
 
 
 def reformat_output_file(file):
