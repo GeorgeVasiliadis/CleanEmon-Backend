@@ -12,6 +12,6 @@ def test_date_to_input_file():
     if os.path.exists(NILM_INPUT_FILE_PATH):
         last_modify_time = os.path.getmtime(NILM_INPUT_FILE_PATH)
 
-    date_to_input_file("2022-05-01")
+    assert NILM_INPUT_FILE_PATH == date_to_input_file("2022-05-01")
     assert os.path.exists(NILM_INPUT_FILE_PATH)
     assert os.path.getmtime(NILM_INPUT_FILE_PATH) != last_modify_time

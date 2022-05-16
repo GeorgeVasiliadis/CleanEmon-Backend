@@ -8,14 +8,23 @@ from CleanEmonCore.models import EnergyData
 from CleanEmonCore.CouchDBAdapter import CouchDBAdapter
 
 from .. import CACHE_DIR
+from .. import CLEAN_DB_CONFIG_FILE
+
+adapter = CouchDBAdapter(CONFIG_FILE)
+clean_adapter = CouchDBAdapter(CLEAN_DB_CONFIG_FILE)
 
 
-def fetch_data(date_id, *, from_cache=False) -> EnergyData:
+def fetch_data(date_id, *, from_cache=False, from_clean_db=False) -> EnergyData:
 
     if not os.path.exists(CACHE_DIR):
         os.mkdir(CACHE_DIR)
 
-    cache_path = os.path.join(CACHE_DIR, date_id)
+    if from_clean_db:
+        name = f"{date_id}.clean"
+    else:
+        name = date_id
+
+    cache_path = os.path.join(CACHE_DIR, name)
 
     fetch_ok = False
 
@@ -33,9 +42,10 @@ def fetch_data(date_id, *, from_cache=False) -> EnergyData:
             print("No cached data!")
 
     if not from_cache or not fetch_ok:
-        adapter = CouchDBAdapter(CONFIG_FILE)
-
-        energy_data = adapter.fetch_energy_data_by_date(date_id)
+        if from_clean_db:
+            energy_data = clean_adapter.fetch_energy_data_by_date(date_id)
+        else:
+            energy_data = adapter.fetch_energy_data_by_date(date_id)
 
         # Cache data for future use
         with open(cache_path, "w") as fout:
