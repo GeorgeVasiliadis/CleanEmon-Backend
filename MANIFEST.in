@@ -1,1 +1,1 @@
-pytest.ini
+include pytest.ini
