@@ -14,7 +14,7 @@ adapter = CouchDBAdapter(CONFIG_FILE)
 clean_adapter = CouchDBAdapter(CLEAN_DB_CONFIG_FILE)
 
 
-def fetch_data(date_id, *, from_cache=False, from_clean_db=False) -> EnergyData:
+def fetch_data(date_id, *, from_cache=False, from_clean_db: bool) -> EnergyData:
 
     if not os.path.exists(CACHE_DIR):
         os.mkdir(CACHE_DIR)
@@ -54,7 +54,7 @@ def fetch_data(date_id, *, from_cache=False, from_clean_db=False) -> EnergyData:
     return energy_data
 
 
-def send_data(date_id: str, data: EnergyData, *, to_clean_db: bool = True):
+def send_data(date_id: str, data: EnergyData, *, to_clean_db: bool):
     if to_clean_db:
         adapt = clean_adapter
     else:

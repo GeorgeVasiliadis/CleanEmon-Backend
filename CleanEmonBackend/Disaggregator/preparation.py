@@ -68,7 +68,7 @@ def date_to_input_file(date: str) -> str:
         - date :: A string in YYYY-MM-DD format
     """
 
-    data = fetch_data(date, from_cache=True)
+    data = fetch_data(date, from_cache=True, from_clean_db=False)
     df = pd.DataFrame(data.energy_data)
 
     # Filter out unneeded columns
