@@ -54,5 +54,10 @@ def fetch_data(date_id, *, from_cache=False, from_clean_db=False) -> EnergyData:
     return energy_data
 
 
-def send_data(date_id):
-    pass
+def send_data(date_id: str, data: EnergyData, *, to_clean_db: bool = True):
+    if to_clean_db:
+        adapt = clean_adapter
+    else:
+        adapt = adapter
+
+    return adapt.update_energy_data_by_date(date_id, data)
