@@ -1,17 +1,29 @@
+import os
+import json
+
+import pandas as pd
 import pytest
 
-from CleanEmonBackend.Disaggregator.preparation import NILM_INPUT_FILE_PATH
-from CleanEmonBackend.Disaggregator.preparation import date_to_input_file
+from CleanEmonCore.models import EnergyData
+
+from CleanEmonBackend.Disaggregator.preparation import energy_data_to_dataframe
 
 
-@pytest.mark.projectwise
-def test_date_to_input_file():
-    import os
+@pytest.fixture
+def energy_data() -> EnergyData:
+    directory = os.path.dirname(__file__)
+    file = os.path.join(directory, "energy_data.json")
 
-    last_modify_time = 0
-    if os.path.exists(NILM_INPUT_FILE_PATH):
-        last_modify_time = os.path.getmtime(NILM_INPUT_FILE_PATH)
+    with open(file, "r") as fp:
+        data_dict = json.load(fp)
 
-    assert NILM_INPUT_FILE_PATH == date_to_input_file("2022-05-01")
-    assert os.path.exists(NILM_INPUT_FILE_PATH)
-    assert os.path.getmtime(NILM_INPUT_FILE_PATH) != last_modify_time
+    return EnergyData(data_dict["date"], data_dict["energy_data"])
+
+
+def test_energy_data_to_dataframe(energy_data):
+    old_cols = energy_data.energy_data[0].keys()
+    df = energy_data_to_dataframe(energy_data)
+
+    assert len(df.columns) == len(old_cols) + 1
+    assert df.shape[0] == 17280
+    assert any([("original" in col) for col in df.columns])

@@ -1,1 +1,3 @@
 include pytest.ini
+
+recursive-include CleanEmonBackend/tests/ *.json
