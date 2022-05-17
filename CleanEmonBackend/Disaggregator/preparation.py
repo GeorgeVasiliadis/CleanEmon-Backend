@@ -2,8 +2,11 @@ from datetime import datetime
 
 import pandas as pd
 
-from .. import NILM_INPUT_FILE_PATH
-from ..lib.DBConnector import fetch_data
+from CleanEmonCore.models import EnergyData
+
+INTERVAL = 5
+INTERVAL_STR = f"{INTERVAL}S"
+PERIODS = 60*60*24/INTERVAL
 
 
 def reformat_timestamp(stamp: float) -> str:
@@ -11,86 +14,53 @@ def reformat_timestamp(stamp: float) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S+01:00")
 
 
-def reindex_to_time(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df = df.set_index(pd.DatetimeIndex(df["Time"]))
-    del df["Time"]
-
-    return df
-
-
-def reset_index(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df = df.reset_index()
-    df = df.rename(columns={"index": "Time"})
-    return df
-
-
-def _remove_random_samples(df: pd.DataFrame, ratio: float = 0.3) -> pd.DataFrame:
-    df = df.copy()
-    count = int(len(df) * ratio)
-    random_rows = df.sample(count)
-    df = df.drop(random_rows.index)
-    return df
-
-
-def round_time(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df.index = df.index.map(lambda date: date.round("5S"))
-    return df
-
-
-def drop_duplicates(df: pd.DataFrame) -> pd.DataFrame:
-    """Drop rows that were rounded to the same timestamp"""
-
-    df = df.copy()
-    df = df[~df.index.duplicated(keep="first")]
-    return df
-
-
-def good_df_factory(df: pd.DataFrame) -> pd.DataFrame:
+def to_continuous_time(df: pd.DataFrame) -> pd.DataFrame:
     df.copy()
+
+    # Copy some datetime details from the original dataframe
     today = df.index[0].date()
     tz = df.index[0].tz
-    good_times = pd.date_range(today, periods=17280, freq="5S", tz=tz)
 
-    good_df = pd.DataFrame(index=good_times, columns=df.columns)
+    # Generate a new index consisting of continuous values
+    continuous_index = pd.date_range(today, periods=PERIODS, freq=INTERVAL_STR, tz=tz)
 
-    intersection = good_df.index.intersection(df.index)
-    good_df.loc[intersection] = df.loc[intersection].values
+    # Create the new dataframe with the continuous index
+    new_df = pd.DataFrame(index=continuous_index, columns=df.columns)
 
-    return good_df
+    # Specify which columns can be filled using the old values
+    intersection = new_df.index.intersection(df.index)
+
+    # Fill the specified time slots with corresponding data from the old dataframe
+    new_df.loc[intersection] = df.loc[intersection].values
+
+    return new_df
 
 
-def date_to_input_file(date: str) -> str:
-    """
-    Args:
-        - date :: A string in YYYY-MM-DD format
-    """
-
-    data = fetch_data(date, from_cache=True, from_clean_db=False)
+def energy_data_to_dataframe(data: EnergyData, timestamp_label: str = "timestamp") -> pd.DataFrame:
+    # Convert to dataframe
     df = pd.DataFrame(data.energy_data)
 
-    # Filter out unneeded columns
-    df = df[["power", "timestamp"]]
-    df["timestamp"] = df["timestamp"].map(reformat_timestamp)
+    # Reformat timestamp as expected by NILM-Inference-APIs
+    df[timestamp_label] = df[timestamp_label].map(reformat_timestamp)
 
-    # Rename columns as desired
-    df.rename(columns={"power": "mains", "timestamp": "Time"}, inplace=True)
+    # Rename columns as expected by NILM-Inference-APIs
+    df.rename(columns={timestamp_label: "Time"}, inplace=True)
 
-    df = reindex_to_time(df)
-    df = round_time(df)
-    df = drop_duplicates(df)
-    df = good_df_factory(df)
-    df = reset_index(df)
+    # Index dataframe by time
+    df = df.set_index(pd.DatetimeIndex(df[timestamp_label]))
+    del df["timestamp"]
 
-    mean = df["mains"].mean()
-    df["mains"] = df["mains"].fillna(mean).round().astype(int)
+    # Quantize time. Every timestamp should be mapped into fixed intervals.
+    df.index = df.index.map(lambda date: date.round(INTERVAL_STR))
 
-    # Create input file
-    df.to_csv(NILM_INPUT_FILE_PATH, index=False)
-    return NILM_INPUT_FILE_PATH
+    # If more than one timestamp map into the same time quantum, arbitrarily remove all duplicates but the first
+    df = df[~df.index.duplicated(keep="first")]
 
+    # Generate a clean dataframe. All potentially empty time slots are filled
+    df = to_continuous_time(df)
 
-def reformat_output_file(file):
-    df = pd.read_csv(file)
+    # Reset index as expected by NILM-Inference-APIs
+    df = df.reset_index()
+    df = df.rename(columns={"index": timestamp_label})
+
+    return df
