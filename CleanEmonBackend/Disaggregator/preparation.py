@@ -37,18 +37,17 @@ def to_continuous_time(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def energy_data_to_dataframe(data: EnergyData, timestamp_label: str = "timestamp") -> pd.DataFrame:
-    # Convert to dataframe
+    # Convert EnergyData to Dataframe
     df = pd.DataFrame(data.energy_data)
 
     # Reformat timestamp as expected by NILM-Inference-APIs
     df[timestamp_label] = df[timestamp_label].map(reformat_timestamp)
 
     # Rename columns as expected by NILM-Inference-APIs
-    df.rename(columns={timestamp_label: "Time"}, inplace=True)
+    df.rename(columns={timestamp_label: f"original{timestamp_label}"}, inplace=True)
 
     # Index dataframe by time
     df = df.set_index(pd.DatetimeIndex(df[timestamp_label]))
-    del df["timestamp"]
 
     # Quantize time. Every timestamp should be mapped into fixed intervals.
     df.index = df.index.map(lambda date: date.round(INTERVAL_STR))
