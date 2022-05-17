@@ -83,11 +83,11 @@ def energy_data_to_dataframe(data: EnergyData, timestamp_label: str = "timestamp
     # Reformat timestamp as expected by NILM-Inference-APIs
     df[timestamp_label] = df[timestamp_label].map(reformat_timestamp)
 
-    # Rename columns as expected by NILM-Inference-APIs
-    df.rename(columns={timestamp_label: f"original{timestamp_label}"}, inplace=True)
-
     # Index dataframe by time
     df = df.set_index(pd.DatetimeIndex(df[timestamp_label]))
+
+    # Rename old timestamp column to preserve it as "original"
+    df.rename(columns={timestamp_label: f"original_{timestamp_label}"}, inplace=True)
 
     # Quantize time. Every timestamp should be mapped into fixed intervals.
     df.index = df.index.map(lambda date: date.round(INTERVAL_STR))
