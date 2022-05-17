@@ -7,6 +7,6 @@ dist/
 
 cache
 
-db.cfg
+*db.cfg
 emon.cfg
 schema.json
