@@ -1,8 +1,10 @@
 import sys
 
-import uvicorn
 
 if __name__ == "__main__":
     if "--api" in sys.argv:
-        uvicorn.run("CleanEmonBackend.API:api")
-
+        from .API.service import run
+        run()
+    elif "--disaggregator":
+        from .Disaggregator.service import run
+        run()
