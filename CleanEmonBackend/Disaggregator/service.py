@@ -1,4 +1,5 @@
 from datetime import date
+from datetime import timedelta
 
 from CleanEmonCore.Events import Observer
 from CleanEmonCore.Events.builtins import DateChange
@@ -24,10 +25,10 @@ def run():
     class Updater(Observer):
         def on_notify(self, *args, **kwargs):
             if "date" in kwargs:
-                new_date = str(kwargs["date"])
-            else:
-                new_date = str(date.today())  # todo: make it send the previous date (aka yesterday)
-            update(new_date)
+                new_date = kwargs["date"]
+            else:  # By default, get the previous date
+                new_date = date.today() - timedelta(days=1)
+            update(str(new_date))
 
     event = DateChange(3, initial_date=date.today())  # todo: increase interval to reduce execution time?
     Updater(event)
