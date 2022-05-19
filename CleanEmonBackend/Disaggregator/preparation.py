@@ -62,9 +62,9 @@ def quantize_by_time(df: pd.DataFrame) -> pd.DataFrame:
         3. Quantum with no value still get to stay in their position even they may be empty (no sample mapped to them)
     """
     df.copy()
-
+    breakpoint()
     # Copy some datetime details from the original dataframe
-    today = df.index[0].date() # todo: start from the first datetime, not the first time of the day. Timezone naive issues
+    today = df.index[0]
     tz = df.index[0].tz
 
     # Generate a new index consisting of continuous values
