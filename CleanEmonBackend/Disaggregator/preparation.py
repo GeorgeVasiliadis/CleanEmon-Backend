@@ -15,6 +15,9 @@ def reformat_timestamp(stamp: float) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S+01:00")
 
 
+def revert_to_timestamp(f_datetime: str) -> str:
+    dt = datetime.strptime(f_datetime, "%Y-%m-%d %H:%M:%S+01:00")
+    return str(dt.timestamp())
 
 
 def quantize_by_time(df: pd.DataFrame) -> pd.DataFrame:
@@ -83,14 +86,14 @@ def energy_data_to_dataframe(data: EnergyData, timestamp_label: str = "timestamp
     # Convert EnergyData to Dataframe
     df = pd.DataFrame(data.energy_data)
 
-    # Copy old timestamps to preserve them
+    # Keep original timestamp column as "original_timestamp"
     df[f"original_{timestamp_label}"] = df[timestamp_label].copy()
 
-    # Reformat timestamp as expected by NILM-Inference-APIs
-    df[timestamp_label] = df[timestamp_label].map(reformat_timestamp)
-    df[timestamp_label] = pd.DatetimeIndex(df[timestamp_label])
+    # Keep another column in format as expected by NILM-Inference-APIs like "2022-05-16 00:00:17+01:00"
+    df["NILM_Time"] = df[timestamp_label].map(reformat_timestamp)
 
     # Index dataframe by time
+    df[timestamp_label] = pd.DatetimeIndex(df["NILM_Time"])
     df = df.set_index(timestamp_label)
 
     # Quantize time. Every timestamp should be mapped into fixed intervals.
@@ -106,9 +109,9 @@ def energy_data_to_dataframe(data: EnergyData, timestamp_label: str = "timestamp
     df = df.reset_index()
     df = df.rename(columns={"index": timestamp_label})
 
-    # Reformat new timestamps to original Unix format
-    df[timestamp_label] = df[timestamp_label].map(pd.Timestamp.timestamp)
-
+    # Get back the python timestamp format
+    df[timestamp_label] = df[timestamp_label].apply(lambda x: x.strftime('%s'))
+    breakpoint()
     return df
 
 
