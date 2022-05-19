@@ -10,6 +10,10 @@ from ..lib.black_sorcery import nilm_path_fix
 
 
 def _set_inference_input(df: pd.DataFrame) -> bool:
+    df = df.copy()
+
+    # Reformat as expected by NILM-Inference-APIs like "2022-05-16 00:00:17+01:00"
+    df["Time"] = pd.to_datetime(df["Time"], unit='s')
     if not os.path.exists(NILM_INPUT_DIR):
         os.makedirs(NILM_INPUT_DIR, exist_ok=True)
 

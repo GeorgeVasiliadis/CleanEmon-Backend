@@ -85,7 +85,6 @@ def quantize_by_time(df: pd.DataFrame) -> pd.DataFrame:
 def energy_data_to_dataframe(data: EnergyData, timestamp_label: str = "timestamp") -> pd.DataFrame:
     # Convert EnergyData to Dataframe
     df = pd.DataFrame(data.energy_data)
-    breakpoint()
 
     # Keep original timestamp column as "original_timestamp"
     df[f"original_{timestamp_label}"] = df[timestamp_label].copy()
@@ -118,7 +117,7 @@ def energy_data_to_dataframe(data: EnergyData, timestamp_label: str = "timestamp
 
 
 def dataframe_to_energy_data(df: pd.DataFrame, timestamp_label: str = "timestamp") -> EnergyData:
-    first_timestamp = pd.to_datetime(df[timestamp_label]).iloc[0]
+    first_timestamp = pd.to_datetime(df[timestamp_label], unit="s").iloc[0]
     date = first_timestamp.date()
     date = str(date)
     energy_data = json.loads(df.to_json(orient="records"))
