@@ -42,3 +42,8 @@ def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[
         now += one_day
 
     return data
+
+
+def get_plot(date: str, from_cache: bool, sensors: List[str] = None) -> str:
+    # energy_data = get_data(from_cache, sensors)
+    return "/home/george/Pictures/Saved Pictures/donut-wall.jpg"

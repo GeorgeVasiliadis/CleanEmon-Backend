@@ -4,11 +4,13 @@ from typing import Optional
 from fastapi import FastAPI
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse
 
 
 def create_app():
     from .API import get_data
     from .API import get_range_data
+    from .API import get_plot
 
     from CleanEmonBackend.lib.exceptions import BadDateError
     from CleanEmonBackend.lib.exceptions import BadDateRangeError
@@ -77,5 +79,9 @@ def create_app():
                 return get_range_data(date, to_date, from_cache, sensors)
         else:
             return get_data(date, from_cache, sensors)
+
+    @app.get("/plot/{date}")
+    def get_daily_plot(date: Optional[str] = None, from_cache: bool = True, sensors: Optional[str] = None):
+        return FileResponse(get_plot(date, from_cache), media_type="image/jpeg")
 
     return app
