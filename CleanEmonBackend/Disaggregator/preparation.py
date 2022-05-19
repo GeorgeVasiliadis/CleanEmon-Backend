@@ -116,8 +116,13 @@ def energy_data_to_dataframe(data: EnergyData, timestamp_label: str = "timestamp
 
 
 def dataframe_to_energy_data(df: pd.DataFrame, timestamp_label: str = "timestamp") -> EnergyData:
+
+    breakpoint()
+    # Ensure that timestamps are returned as floats, not strings
+    df[timestamp_label] = df[timestamp_label].astype(float)
     first_timestamp = pd.to_datetime(df[timestamp_label], unit="s").iloc[0]
     date = first_timestamp.date()
     date = str(date)
     energy_data = json.loads(df.to_json(orient="records"))
+
     return EnergyData(date=date, energy_data=energy_data)
