@@ -46,7 +46,7 @@ class TestGetData:
     def test_sensors(self):
         sensors = "timestamp,power,external_temp"
 
-        response = client.get(f"/data?sensors={sensors}")
+        response = client.get(f"/data/2022-05-10?sensors={sensors}")
         data = response.json()
 
         for sensor in sensors.split(","):
