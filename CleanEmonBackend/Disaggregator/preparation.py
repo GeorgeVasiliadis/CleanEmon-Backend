@@ -111,7 +111,6 @@ def energy_data_to_dataframe(data: EnergyData, timestamp_label: str = "timestamp
 
     # Get back the python timestamp format
     df[timestamp_label] = df[timestamp_label].apply(lambda x: x.strftime('%s'))
-    breakpoint()
     return df
 
 
