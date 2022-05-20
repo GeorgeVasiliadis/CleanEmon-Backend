@@ -44,7 +44,7 @@ def create_app():
 
     @app.get("/data", include_in_schema=False)  # Alias for /data/<today>
     @app.get("/data/{date}", tags=["Views"])
-    def get_daily_data(date: Optional[str] = None, to_date: Optional[str] = None, disaggregate: bool = False,
+    def get_daily_data(date: Optional[str] = None, to_date: Optional[str] = None, clean: bool = False,
                        from_cache: bool = True, sensors: Optional[str] = None):
         """Returns the daily data for the supplied **{date}**. If {date} is omitted, then **{date}** is automatically
         set to today's date.
@@ -55,8 +55,8 @@ def create_app():
         - **{date}**: A date in YYYY-MM-DD format
         - **to_date**: A date in YYYY-MM-DD format. If present, defines the inclusive end of date range for returned
         data
-        - **disaggregate**: If set to True, requests an on-demand disaggregation over the returned data. This is only
-        useful when dealing with today's data
+        - **clean**: If set to True, requests an on-demand disaggregation and cleaning over the returned data. This is
+        only useful when dealing with today's data
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database.
         - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
