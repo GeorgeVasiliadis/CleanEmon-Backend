@@ -5,8 +5,7 @@ dist/
 
 .idea
 
-cache
-
+data
 *db.cfg
 emon.cfg
 schema.json
