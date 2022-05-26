@@ -78,6 +78,10 @@ def create_app():
 
         return get_data(parsed_date, from_cache, sensors)
 
+    # @app.get("/json/date/", tags=["Views"])
+    # def get_json_today(date: str = None, clean: bool = False, from_cache: bool = True, sensors: Optional[str] = None):
+    #     return get_plot_date("today", clean, from_cache, sensors)
+
     @app.get("/json/range/{from_date}/{to_date}", tags=["Views"])
     def get_json_range(from_date: str, to_date: str, clean: bool = False, from_cache: bool = True,
                        sensors: Optional[str] = None):
@@ -99,16 +103,29 @@ def create_app():
         """
 
         if not is_valid_date_range(from_date, to_date):
-            raise BadDateRangeError
+            raise BadDateRangeError(from_date, to_date)
 
         if sensors:
             sensors = sensors.split(',')
 
         return get_range_data(from_date, to_date, from_cache, sensors)
 
-    @app.get("/plot/{date}")
-    def get_daily_plot(date: Optional[str] = None, from_cache: bool = True, sensors: Optional[str] = None):
-        # return FileResponse(get_plot(date, from_cache), media_type="image/jpeg")
+    @app.get("/plot/date/{date}", tags=["Views"])
+    def get_plot_date(date: str = None, clean: bool = False, from_cache: bool = True, sensors: Optional[str] = None):
+        energy_data = get_json_date(date, clean, from_cache, sensors)
+        # plot_path = plot(energy_data)
+        # return FileResponse(plot_path, media_type="image/jpeg")
+        return JSONResponse(
+            status_code=501,
+            content={"message": "This feature is currently not implemented"}
+        )
+
+    @app.get("/plot/range/{from_date}/{to_date}", tags=["Views"])
+    def get_plot_range(from_date: str, to_date: str, clean: bool = False, from_cache: bool = True,
+                       sensors: Optional[str] = None):
+        data_list = get_json_range(from_date, to_date, clean, from_cache, sensors)
+        # plot_path = plot(energy_data)
+        # return FileResponse(plot_path, media_type="image/jpeg")
         return JSONResponse(
             status_code=501,
             content={"message": "This feature is currently not implemented"}
