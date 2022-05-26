@@ -42,8 +42,8 @@ def create_app():
                                 f"be in ISO format (YYYY-MM-DD) and placed in correct order."}
         )
 
-    @app.get("/data", include_in_schema=False)  # Alias for /data/<today>
-    @app.get("/data/{date}", tags=["Views"])
+    @app.get("/json/date", include_in_schema=False)
+    @app.get("/json/date/{date}", tags=["Views"])
     def get_daily_data(date: Optional[str] = None, to_date: Optional[str] = None, clean: bool = False,
                        from_cache: bool = True, sensors: Optional[str] = None):
         """Returns the daily data for the supplied **{date}**. If {date} is omitted, then **{date}** is automatically
