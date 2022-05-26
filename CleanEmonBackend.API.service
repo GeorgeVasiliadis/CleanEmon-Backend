@@ -1,0 +1,14 @@
+[Unit]
+Description=The public API of CleanEmon's ecosystem
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=Simple
+Restart=always
+RestartSec=1
+User=__CHANGE_ME__
+ExecStart=/__CHANGE_ME__/python3 -m uvicorn CleanEmonBackend.API:api --host 0.0.0.0
+
+[Install]
+WantedBy=multi-user.target
