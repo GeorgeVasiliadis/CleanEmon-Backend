@@ -78,6 +78,34 @@ def create_app():
 
         return get_data(parsed_date, from_cache, sensors)
 
+    @app.get("/json/range/{from_date}/{to_date}", tags=["Views"])
+    def get_json_range(from_date: str, to_date: str, clean: bool = False, from_cache: bool = True,
+                       sensors: Optional[str] = None):
+        """Returns the daily data for the supplied **{date}**. If {date} is omitted, then **{date}** is automatically
+        set to today's date.
+
+        If **to_date** parameter is used, then a range of daily data is returned starting from **{date}** up to
+        **to_date**
+
+        - **{date}**: A date in YYYY-MM-DD format
+        - **to_date**: A date in YYYY-MM-DD format. If present, defines the inclusive end of date range for returned
+        data
+        - **clean**: If set to True, requests an on-demand disaggregation and cleaning over the returned data. This is
+        only useful when dealing with today's data
+        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
+        data will be looked up in cache and then, if they are not found, fetched from the central database.
+        - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
+        list will be returned
+        """
+
+        if not is_valid_date_range(from_date, to_date):
+            raise BadDateRangeError
+
+        if sensors:
+            sensors = sensors.split(',')
+
+        return get_range_data(from_date, to_date, from_cache, sensors)
+
     @app.get("/plot/{date}")
     def get_daily_plot(date: Optional[str] = None, from_cache: bool = True, sensors: Optional[str] = None):
         # return FileResponse(get_plot(date, from_cache), media_type="image/jpeg")
