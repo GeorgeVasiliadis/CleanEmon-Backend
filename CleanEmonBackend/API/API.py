@@ -10,7 +10,7 @@ from .. import RES_DIR
 
 
 def get_data(date: str, from_cache: bool, sensors: List[str] = None) -> EnergyData:
-    raw_data = fetch_data(date, from_cache=from_cache, from_clean_db=False).energy_data
+    raw_data = fetch_data(date, from_cache=from_cache).energy_data
 
     if sensors:
         filtered_data = []
