@@ -6,6 +6,7 @@ from typing import List
 from CleanEmonCore.models import EnergyData
 
 from ..lib.DBConnector import fetch_data
+from .. import RES_DIR
 
 
 def get_data(date: str, from_cache: bool, sensors: List[str] = None) -> EnergyData:
@@ -46,4 +47,5 @@ def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[
 
 def get_plot(date: str, from_cache: bool, sensors: List[str] = None) -> str:
     # energy_data = get_data(from_cache, sensors)
-    return "/home/george/Pictures/Saved Pictures/donut-wall.jpg"
+
+    return f"{RES_DIR}/donut.jpg"

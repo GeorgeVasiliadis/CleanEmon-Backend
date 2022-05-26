@@ -2,6 +2,7 @@ import os
 
 PACKAGE_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(PACKAGE_DIR, "data")
+RES_DIR = os.path.join(PACKAGE_DIR, "res")
 
 # Ensure that the `$PACKAGE/data` dir exists
 if not os.path.isdir(DATA_DIR):
