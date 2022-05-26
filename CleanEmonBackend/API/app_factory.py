@@ -82,6 +82,10 @@ def create_app():
 
     @app.get("/plot/{date}")
     def get_daily_plot(date: Optional[str] = None, from_cache: bool = True, sensors: Optional[str] = None):
-        return FileResponse(get_plot(date, from_cache), media_type="image/jpeg")
+        # return FileResponse(get_plot(date, from_cache), media_type="image/jpeg")
+        return JSONResponse(
+            status_code=501,
+            content={"message": "This feature is currently not implemented"}
+        )
 
     return app
