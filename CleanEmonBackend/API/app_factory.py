@@ -42,10 +42,8 @@ def create_app():
                                 f"be in ISO format (YYYY-MM-DD) and placed in correct order."}
         )
 
-    @app.get("/json/date", include_in_schema=False)
     @app.get("/json/date/{date}", tags=["Views"])
-    def get_daily_data(date: Optional[str] = None, to_date: Optional[str] = None, clean: bool = False,
-                       from_cache: bool = True, sensors: Optional[str] = None):
+    def get_json_date(date: str = None, clean: bool = False, from_cache: bool = True, sensors: Optional[str] = None):
         """Returns the daily data for the supplied **{date}**. If {date} is omitted, then **{date}** is automatically
         set to today's date.
 
@@ -63,22 +61,22 @@ def create_app():
         list will be returned
         """
 
-        if date:
-            if not is_valid_date(date):
-                raise BadDateError(date)
-        else:  # The user provided date
-            date = datetime.date.today().isoformat()
+        parsed_date: str
+
+        if date.lower() == "today":
+            parsed_date = datetime.date.today().isoformat()
+        elif date.lower() == "yesterday":
+            yesterday = datetime.date.today() - datetime.timedelta(days=1)
+            parsed_date = yesterday.isoformat()
+        elif is_valid_date(date):
+            parsed_date = date
+        else:
+            raise BadDateError(date)
 
         if sensors:
             sensors = sensors.split(',')
 
-        if to_date:
-            if not is_valid_date_range(date, to_date):
-                raise BadDateRangeError(date, to_date)
-            else:
-                return get_range_data(date, to_date, from_cache, sensors)
-        else:
-            return get_data(date, from_cache, sensors)
+        return get_data(parsed_date, from_cache, sensors)
 
     @app.get("/plot/{date}")
     def get_daily_plot(date: Optional[str] = None, from_cache: bool = True, sensors: Optional[str] = None):
