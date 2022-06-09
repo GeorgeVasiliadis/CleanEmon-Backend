@@ -1,2 +1,4 @@
 include pytest.ini
-recursive-include CleanEmonBackend/tests/ *.json
+graft src/CleanEmonBackend/tests
+
+global-exclude *.py[cod]

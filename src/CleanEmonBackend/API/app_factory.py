@@ -4,13 +4,11 @@ from typing import Optional
 from fastapi import FastAPI
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from fastapi.responses import FileResponse
 
 
 def create_app():
     from .API import get_data
     from .API import get_range_data
-    from .API import get_plot
 
     from CleanEmonBackend.lib.exceptions import BadDateError
     from CleanEmonBackend.lib.exceptions import BadDateRangeError
