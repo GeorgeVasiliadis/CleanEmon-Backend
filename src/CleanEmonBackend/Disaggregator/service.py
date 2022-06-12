@@ -13,12 +13,12 @@ from ..Disaggregator import disaggregate
 
 
 def update(new_date: str):
-    energy_data = fetch_data(new_date, from_clean_db=False)  # todo: begone from_clean_db
+    energy_data = fetch_data(new_date)
     df = energy_data_to_dataframe(energy_data)
 
     df = disaggregate(df)
     dis_energy_data = dataframe_to_energy_data(df)
-    send_data(new_date, dis_energy_data, to_clean_db=False)  # todo: begone to_clean_db
+    send_data(new_date, dis_energy_data)
 
 
 def run():
