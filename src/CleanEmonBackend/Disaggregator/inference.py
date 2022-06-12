@@ -33,21 +33,22 @@ def _disaggregate_to_files() -> List[Tuple[str, str]]:
         # ------------------------------------------------------#
         from lab.nilm_trainer import nilm_inference
         from constants.enumerates import ElectricalAppliances
-        from constants.enumerates import WaterAppliances
 
         # Consider all known devices
-        devices = list(ElectricalAppliances) + list(WaterAppliances)
+        devices = list(ElectricalAppliances)
         devices = [dev.value for dev in devices]
 
-        return nilm_inference(devices=devices, sample_period=5, inference_cpu=True, window_size=1)
+        devices = [devices[0]] # todo remove
+
+        return nilm_inference(devices=devices, sample_period=5, inference_cpu=True)
 
 
 def disaggregate(df: pd.DataFrame, timestamp_label: str = "timestamp", target_label: str = "power") -> pd.DataFrame:
     df = df.copy()
 
     # Filter unneeded columns
-    df_filtered = df[[timestamp_label, target_label]]
-    df_filtered[target_label].fillna(df_filtered[target_label].mean().round(), inplace=True)
+    df_filtered = df.loc[:, [timestamp_label, target_label]]
+    df_filtered[target_label] = df_filtered[target_label].fillna(df_filtered[target_label].mean().round())
     df_filtered = df_filtered.rename(columns={timestamp_label: "Time", target_label: "mains"})
 
     # Write dataframe to input file
@@ -59,13 +60,13 @@ def disaggregate(df: pd.DataFrame, timestamp_label: str = "timestamp", target_la
     # Read data back into memory
     for device, file in devices_files:
         temp_df = pd.read_csv(file)
-        assert df.shape[0] == temp_df.shape[0], "Mismatch on number of input-output for disaggregated rows"
+        first_n_missing = df.shape[0] - temp_df.shape[0]
 
-        col = device.lower().replace(" ", "_")
-        col = f"pred_{col}"
+        col_name = device.lower().replace(" ", "_")
+        col_name = f"pred_{col_name}"
 
-        df[col] = temp_df["preds"]
-
+        preds = pd.concat([pd.Series(np.zeros(first_n_missing)), temp_df["preds"]])
+        df[col_name] = preds.values
     # Clear rows that originally had NaN as target value, but keep timestamps
     df.loc[df[target_label].isna(), df.columns != timestamp_label] = np.NaN
 
