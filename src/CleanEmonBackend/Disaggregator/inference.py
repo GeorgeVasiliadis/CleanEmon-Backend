@@ -47,6 +47,7 @@ def disaggregate(df: pd.DataFrame, timestamp_label: str = "timestamp", target_la
 
     # Filter unneeded columns
     df_filtered = df[[timestamp_label, target_label]]
+    df_filtered[target_label].fillna(df_filtered[target_label].mean().round(), inplace=True)
     df_filtered = df_filtered.rename(columns={timestamp_label: "Time", target_label: "mains"})
 
     # Write dataframe to input file
