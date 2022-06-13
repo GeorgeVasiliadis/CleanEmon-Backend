@@ -1,5 +1,9 @@
 import os
 
+from CleanEmonCore.dotfiles import get_dotfile
+
+from .setup import generate_nilm_inference_apis_config
+
 PACKAGE_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(PACKAGE_DIR, "data")
 RES_DIR = os.path.join(PACKAGE_DIR, "res")
@@ -11,11 +15,11 @@ if not os.path.isdir(DATA_DIR):
 CACHE_DIR = os.path.join(DATA_DIR, "cache")
 PLOT_DIR = os.path.join(DATA_DIR, "plots")
 
-NILM_INFERENCE_APIS_DIR = "/home/george/PycharmProjects/CleanEmon/NILM-Inference-APIs"  # todo: Procedural definition
-assert os.path.exists(NILM_INFERENCE_APIS_DIR), (
-    f"Please specify the directory of NILM-Inference-APIs at `NILM_INFERENCE_APIS_DIR` in {__file__} and re-run"
-)
-NILM_INFERENCE_APIS_DIR = os.path.abspath(NILM_INFERENCE_APIS_DIR)
+# --- NILM-Inference-APIs ---
+_NILM_CONFIG = "NILM-Inference-APIs.path"
+NILM_CONFIG = get_dotfile(_NILM_CONFIG, generate_nilm_inference_apis_config)
+with open(NILM_CONFIG, "r") as f_in:
+    NILM_INFERENCE_APIS_DIR = f_in.read().strip()
 
 NILM_INPUT_DIR = os.path.join(NILM_INFERENCE_APIS_DIR, "input", "data")
 if not os.path.exists(NILM_INPUT_DIR):
