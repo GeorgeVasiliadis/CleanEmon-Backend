@@ -38,8 +38,6 @@ def _disaggregate_to_files() -> List[Tuple[str, str]]:
         devices = list(ElectricalAppliances)
         devices = [dev.value for dev in devices]
 
-        devices = [devices[0]] # todo remove
-
         return nilm_inference(devices=devices, sample_period=5, inference_cpu=True)
 
 
