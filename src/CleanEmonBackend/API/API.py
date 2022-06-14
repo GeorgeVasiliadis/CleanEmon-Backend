@@ -49,3 +49,25 @@ def get_plot(date: str, from_cache: bool, sensors: List[str] = None) -> str:
     # energy_data = get_data(from_cache, sensors)
 
     return f"{RES_DIR}/donut.jpg"
+
+
+def get_processed_kwh(date: str, from_cache: bool) -> float:
+    data = get_data(date, from_cache)
+
+    kwh_list = [record["kwh"] for record in data.energy_data]
+
+    # Find the first valid kwh measurement
+    first_valid = 0
+    for kwh in kwh_list:
+        if kwh:
+            first_valid = kwh
+            break
+
+    # Find the last valid kwh measurement
+    last_valid = 0
+    for kwh in reversed(kwh_list):
+        if kwh:
+            last_valid = kwh
+            break
+
+    return last_valid - first_valid

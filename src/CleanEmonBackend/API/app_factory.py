@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 def create_app():
     from .API import get_data
     from .API import get_range_data
+    from .API import get_processed_kwh
 
     from CleanEmonBackend.lib.exceptions import BadDateError
     from CleanEmonBackend.lib.exceptions import BadDateRangeError
@@ -128,5 +129,22 @@ def create_app():
             status_code=501,
             content={"message": "This feature is currently not implemented"}
         )
+
+    @app.get("/json/date/{date}/kwh", tags=["Views"])
+    def get_processed_json_date_kwh(date: str = None, clean: bool = False, from_cache: bool = True):
+
+        parsed_date: str
+
+        if date.lower() == "today":
+            parsed_date = datetime.date.today().isoformat()
+        elif date.lower() == "yesterday":
+            yesterday = datetime.date.today() - datetime.timedelta(days=1)
+            parsed_date = yesterday.isoformat()
+        elif is_valid_date(date):
+            parsed_date = date
+        else:
+            raise BadDateError(date)
+
+        return get_processed_kwh(parsed_date, from_cache)
 
     return app
