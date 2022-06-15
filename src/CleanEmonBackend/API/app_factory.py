@@ -141,6 +141,6 @@ def create_app():
         else:
             raise BadDateError(date)
 
-        return get_processed_kwh(parsed_date, from_cache)
+        return get_date_consumption(parsed_date, from_cache)
 
     return app
