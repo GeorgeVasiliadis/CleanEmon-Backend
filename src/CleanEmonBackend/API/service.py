@@ -1,3 +1,5 @@
+"""Simple entry point for starting the API server programmatically"""
+
 import uvicorn
 
 
