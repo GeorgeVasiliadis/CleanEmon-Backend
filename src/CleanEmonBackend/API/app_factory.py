@@ -83,10 +83,6 @@ def create_app():
 
         return get_data(parsed_date, from_cache, sensors)
 
-    # @app.get("/json/date/", tags=["Views"])
-    # def get_json_today(date: str = None, clean: bool = False, from_cache: bool = True, sensors: Optional[str] = None):
-    #     return get_plot_date("today", clean, from_cache, sensors)
-
     @app.get("/json/range/{from_date}/{to_date}", tags=["Views"])
     def get_json_range(from_date: str, to_date: str, clean: bool = False, from_cache: bool = True,
                        sensors: Optional[str] = None):
@@ -121,17 +117,10 @@ def create_app():
             sensors = sensors.split(',')
         plot_path = get_plot(date, from_cache, sensors)
         return FileResponse(plot_path, media_type="image/jpeg")
-        # return JSONResponse(
-        #     status_code=501,
-        #     content={"message": "This feature is currently not implemented"}
-        # )
 
     @app.get("/plot/range/{from_date}/{to_date}", tags=["Experimental"])
     def get_plot_range(from_date: str, to_date: str, clean: bool = False, from_cache: bool = True,
                        sensors: Optional[str] = None):
-        data_list = get_json_range(from_date, to_date, clean, from_cache, sensors)
-        # plot_path = plot(energy_data)
-        # return FileResponse(plot_path, media_type="image/jpeg")
         return JSONResponse(
             status_code=501,
             content={"message": "This feature is currently not implemented"}
@@ -153,9 +142,5 @@ def create_app():
             raise BadDateError(date)
 
         return get_processed_kwh(parsed_date, from_cache)
-    #
-    # @app.get("/plot/date/{date}/kwh")
-    # def get_processed_plot_date_kwh(date: str = None, clean: bool = False, from_cache: bool = True):
-    #
 
     return app
