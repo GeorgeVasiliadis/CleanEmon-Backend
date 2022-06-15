@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+from datetime import timedelta
+
 from typing import List
 
 from matplotlib import pyplot as plt
@@ -17,6 +19,10 @@ def timestamp_to_label(stamp):
     """Converts `stamp` into a datetime object and returns its reformatted string representation"""
 
     dt = datetime.fromtimestamp(stamp)
+
+    # Temporary fix of the offset bug. Future version should re-implement the way time is measured in first place
+    dt += timedelta(hours=3)
+
     return dt.strftime("%H:%M:%S")
 
 
