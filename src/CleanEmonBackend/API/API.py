@@ -15,7 +15,8 @@ from ..lib.plots import plot_data
 
 
 def get_data(date: str, from_cache: bool, sensors: List[str] = None) -> EnergyData:
-    """Fetches and prepares the daily data that will be returned.
+    """Fetches and prepares the daily data that will be returned, filtering in the provided `sensors`.
+    Note that there is no need to explicitly specify the "timestamp sensor", as it will always be included.
 
     date -- a valid date string in `YYYY-MM-DD` format
     from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
@@ -25,6 +26,9 @@ def get_data(date: str, from_cache: bool, sensors: List[str] = None) -> EnergyDa
     raw_data = fetch_data(date, from_cache=from_cache).energy_data
 
     if sensors:
+        if "timestamp" not in sensors:
+            sensors.append("timestamp")
+
         filtered_data = []
         for record in raw_data:
             filtered_record = {sensor: value for sensor, value in record.items() if sensor in sensors}
