@@ -36,6 +36,25 @@ def create_app():
 
     app = FastAPI(openapi_tags=meta_tags, swagger_ui_parameters={"defaultModelsExpandDepth": -1})
 
+    def parse_date(date: str) -> str:
+        """Simple date parser. A date can either be in a standard YYYY-MM-DD format or a predefined alias.
+        If the given date is invalid, a BadDateError is being raised.
+        """
+
+        parsed_date: str
+
+        if date.lower() == "today":
+            parsed_date = datetime.date.today().isoformat()
+        elif date.lower() == "yesterday":
+            yesterday = datetime.date.today() - datetime.timedelta(days=1)
+            parsed_date = yesterday.isoformat()
+        elif is_valid_date(date):
+            parsed_date = date
+        else:
+            raise BadDateError(date)
+
+        return parsed_date
+
     @app.exception_handler(BadDateError)
     def bad_date_exception_handler(request: Request, exception: BadDateError):
         return JSONResponse(
@@ -62,17 +81,7 @@ def create_app():
         list will be returned
         """
 
-        parsed_date: str
-
-        if date.lower() == "today":
-            parsed_date = datetime.date.today().isoformat()
-        elif date.lower() == "yesterday":
-            yesterday = datetime.date.today() - datetime.timedelta(days=1)
-            parsed_date = yesterday.isoformat()
-        elif is_valid_date(date):
-            parsed_date = date
-        else:
-            raise BadDateError(date)
+        parsed_date = parse_date(date)
 
         if sensors:
             sensors = sensors.split(',')
@@ -111,17 +120,7 @@ def create_app():
         list will be returned
         """
 
-        parsed_date: str
-
-        if date.lower() == "today":
-            parsed_date = datetime.date.today().isoformat()
-        elif date.lower() == "yesterday":
-            yesterday = datetime.date.today() - datetime.timedelta(days=1)
-            parsed_date = yesterday.isoformat()
-        elif is_valid_date(date):
-            parsed_date = date
-        else:
-            raise BadDateError(date)
+        parsed_date = parse_date(date)
 
         if sensors:
             sensors = sensors.split(',')
@@ -148,17 +147,7 @@ def create_app():
         data will be looked up in cache and then, if they are not found, fetched from the central database.
         """
 
-        parsed_date: str
-
-        if date.lower() == "today":
-            parsed_date = datetime.date.today().isoformat()
-        elif date.lower() == "yesterday":
-            yesterday = datetime.date.today() - datetime.timedelta(days=1)
-            parsed_date = yesterday.isoformat()
-        elif is_valid_date(date):
-            parsed_date = date
-        else:
-            raise BadDateError(date)
+        parsed_date = parse_date(date)
 
         return get_date_consumption(parsed_date, from_cache)
 
