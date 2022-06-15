@@ -51,5 +51,7 @@ def plot_data(energy_data: EnergyData, *, columns: List[str] = None, name="plot"
     plt.xlabel("Time")
     fout_name = os.path.join(PLOT_DIR, f"{name}.png")
     plt.savefig(fout_name, dpi=1000)
+    plt.cla()
+    plt.clf()
     return fout_name
 
