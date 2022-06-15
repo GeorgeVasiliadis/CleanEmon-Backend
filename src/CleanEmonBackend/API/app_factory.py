@@ -52,12 +52,10 @@ def create_app():
         )
 
     @app.get("/json/date/{date}", tags=["Views"])
-    def get_json_date(date: str = None, clean: bool = False, from_cache: bool = True, sensors: Optional[str] = None):
+    def get_json_date(date: str = None, from_cache: bool = True, sensors: Optional[str] = None):
         """Returns the daily data for the supplied **{date}**.
 
         - **{date}**: A date in YYYY-MM-DD format
-        - **clean**: If set to True, requests an on-demand disaggregation and cleaning over the returned data. This is
-        only useful when dealing with today's data
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database.
         - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
@@ -82,14 +80,12 @@ def create_app():
         return get_data(parsed_date, from_cache, sensors)
 
     @app.get("/json/range/{from_date}/{to_date}", tags=["Views"])
-    def get_json_range(from_date: str, to_date: str, clean: bool = False, from_cache: bool = True,
+    def get_json_range(from_date: str, to_date: str, from_cache: bool = True,
                        sensors: Optional[str] = None):
         """Returns the range data for the supplied range, from **{from_date}** to **{to_date}**.
 
         - **{from_date}**: A date in YYYY-MM-DD format
         - **to_date**: A date in YYYY-MM-DD format. It should be chronologically greater or equal to **{from_date}**
-        - **clean**: If set to True, requests an on-demand disaggregation and cleaning over the returned data. This is
-        only useful when dealing with today's data
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database.
         - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
@@ -105,12 +101,10 @@ def create_app():
         return get_range_data(from_date, to_date, from_cache, sensors)
 
     @app.get("/plot/date/{date}", tags=["Experimental"])
-    def get_plot_date(date: str = None, clean: bool = False, from_cache: bool = True, sensors: Optional[str] = None):
+    def get_plot_date(date: str = None, from_cache: bool = True, sensors: Optional[str] = None):
         """Returns the plot of the specified data, as a JPEG image.
 
         - **{date}**: A date in YYYY-MM-DD format
-        - **clean**: If set to True, requests an on-demand disaggregation and cleaning over the returned data. This is
-        only useful when dealing with today's data
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database.
         - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
@@ -137,7 +131,7 @@ def create_app():
         return FileResponse(plot_path, media_type="image/jpeg")
 
     @app.get("/plot/range/{from_date}/{to_date}", tags=["Experimental"])
-    def get_plot_range(from_date: str, to_date: str, clean: bool = False, from_cache: bool = True,
+    def get_plot_range(from_date: str, to_date: str, from_cache: bool = True,
                        sensors: Optional[str] = None):
         """Under construction :)"""
         return JSONResponse(
@@ -146,12 +140,10 @@ def create_app():
         )
 
     @app.get("/json/date/{date}/consumption", tags=["Views"])
-    def get_json_date_consumption(date: str = None, clean: bool = False, from_cache: bool = True):
+    def get_json_date_consumption(date: str = None, from_cache: bool = True):
         """Returns the power consumption for the given date.
 
         - **{date}**: A date in YYYY-MM-DD format
-        - **clean**: If set to True, requests an on-demand disaggregation and cleaning over the returned data. This is
-        only useful when dealing with today's data
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database.
         """
