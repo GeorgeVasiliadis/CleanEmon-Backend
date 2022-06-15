@@ -22,7 +22,7 @@ def create_app():
     meta_tags = [
         {
             "name": "Views",
-            "description": "Essential views."
+            "description": "Essential views"
         },
         {
             "name": "Experimental",
