@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from datetime import timedelta
 
@@ -5,8 +6,9 @@ from typing import List
 
 from CleanEmonCore.models import EnergyData
 
-from ..lib.DBConnector import fetch_data
 from .. import RES_DIR
+from ..lib.DBConnector import fetch_data
+from ..lib.plots import plot_data
 
 
 def get_data(date: str, from_cache: bool, sensors: List[str] = None) -> EnergyData:
@@ -46,9 +48,9 @@ def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[
 
 
 def get_plot(date: str, from_cache: bool, sensors: List[str] = None) -> str:
-    # energy_data = get_data(from_cache, sensors)
-
-    return f"{RES_DIR}/donut.jpg"
+    energy_data = get_data(date, from_cache, sensors)
+    f_out = plot_data(energy_data, columns=sensors)
+    return os.path.join(RES_DIR, f_out)
 
 
 def get_processed_kwh(date: str, from_cache: bool) -> float:

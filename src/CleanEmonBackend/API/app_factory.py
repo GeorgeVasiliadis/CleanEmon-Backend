@@ -4,12 +4,14 @@ from typing import Optional
 from fastapi import FastAPI
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse
 
 
 def create_app():
     from .API import get_data
     from .API import get_range_data
     from .API import get_processed_kwh
+    from .API import get_plot
 
     from CleanEmonBackend.lib.exceptions import BadDateError
     from CleanEmonBackend.lib.exceptions import BadDateRangeError
@@ -21,6 +23,10 @@ def create_app():
         {
             "name": "Views",
             "description": "Essential views."
+        },
+        {
+            "name": "Experimental",
+            "description": "Cutting-edge features that may not be stable yet"
         }
     ]
 
@@ -109,17 +115,18 @@ def create_app():
 
         return get_range_data(from_date, to_date, from_cache, sensors)
 
-    @app.get("/plot/date/{date}", tags=["Views"])
+    @app.get("/plot/date/{date}", tags=["Experimental"])
     def get_plot_date(date: str = None, clean: bool = False, from_cache: bool = True, sensors: Optional[str] = None):
-        energy_data = get_json_date(date, clean, from_cache, sensors)
-        # plot_path = plot(energy_data)
-        # return FileResponse(plot_path, media_type="image/jpeg")
-        return JSONResponse(
-            status_code=501,
-            content={"message": "This feature is currently not implemented"}
-        )
+        if sensors:
+            sensors = sensors.split(',')
+        plot_path = get_plot(date, from_cache, sensors)
+        return FileResponse(plot_path, media_type="image/jpeg")
+        # return JSONResponse(
+        #     status_code=501,
+        #     content={"message": "This feature is currently not implemented"}
+        # )
 
-    @app.get("/plot/range/{from_date}/{to_date}", tags=["Views"])
+    @app.get("/plot/range/{from_date}/{to_date}", tags=["Experimental"])
     def get_plot_range(from_date: str, to_date: str, clean: bool = False, from_cache: bool = True,
                        sensors: Optional[str] = None):
         data_list = get_json_range(from_date, to_date, clean, from_cache, sensors)
@@ -146,5 +153,9 @@ def create_app():
             raise BadDateError(date)
 
         return get_processed_kwh(parsed_date, from_cache)
+    #
+    # @app.get("/plot/date/{date}/kwh")
+    # def get_processed_plot_date_kwh(date: str = None, clean: bool = False, from_cache: bool = True):
+    #
 
     return app
