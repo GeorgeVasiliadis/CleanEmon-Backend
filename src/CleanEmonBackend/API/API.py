@@ -1,8 +1,11 @@
+"""This module defines the core functionality of the API"""
+
 import os
 from datetime import datetime
 from datetime import timedelta
 
 from typing import List
+from typing import Dict
 
 from CleanEmonCore.models import EnergyData
 
@@ -12,6 +15,13 @@ from ..lib.plots import plot_data
 
 
 def get_data(date: str, from_cache: bool, sensors: List[str] = None) -> EnergyData:
+    """Fetches and prepares the daily data that will be returned.
+
+    date -- a valid date string in `YYYY-MM-DD` format
+    from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
+    sensors -- an inclusive list containing the values of interest
+    """
+
     raw_data = fetch_data(date, from_cache=from_cache).energy_data
 
     if sensors:
@@ -26,7 +36,17 @@ def get_data(date: str, from_cache: bool, sensors: List[str] = None) -> EnergyDa
     return EnergyData(date, data)
 
 
-def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[str] = None):
+def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[str] = None) -> Dict:
+    """Fetches and prepares the range data that will be returned.
+
+    from_date -- a valid date string in `YYYY-MM-DD` format
+    to_date -- a valid date string in `YYYY-MM-DD` format. It MUST be chronologically greater or equal to `from_date`
+    from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
+    sensors -- an inclusive list containing the values of interest
+    """
+
+    # Define the range data schema
+    # todo: maybe define a an appropriate solid dataclass?
     data = {
         "from_date": from_date,
         "to_date": to_date,
@@ -37,6 +57,7 @@ def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[
     to_dt = datetime.strptime(to_date, "%Y-%m-%d")
     one_day = timedelta(days=1)
 
+    # Concatenate energy data from multiple dates into a single list
     now = from_dt
     while now <= to_dt:
         now_str = now.strftime("%Y-%m-%d")
@@ -48,12 +69,30 @@ def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[
 
 
 def get_plot(date: str, from_cache: bool, sensors: List[str] = None) -> str:
+    """Fetches and plots the desired data. Returns the path of the resulting plot.
+
+    date -- a valid date string in `YYYY-MM-DD` format
+    from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
+    sensors -- an inclusive list containing the values of interest
+    """
+
     energy_data = get_data(date, from_cache, sensors)
     f_out = plot_data(energy_data, columns=sensors)
+
     return os.path.join(RES_DIR, f_out)
 
 
 def get_processed_kwh(date: str, from_cache: bool) -> float:
+    """Hardcoded fetch-prepare accumulator function that handles the daily KwH. Returns the daily consumption in kwh.
+
+    Acts as an under-the-curve measurement by subtracting the lowest power measurement from the highest one.
+    It's not given that the first record of the energy data will always contain valid power values and thus, the "first
+    value" is actually searched and cherry-picked. Same goes for the "last valid value".
+
+    date -- a valid date string in `YYYY-MM-DD` format
+    from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
+    """
+
     data = get_data(date, from_cache)
 
     kwh_list = [record["kwh"] for record in data.energy_data]
