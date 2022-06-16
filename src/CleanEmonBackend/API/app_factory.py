@@ -71,7 +71,7 @@ def create_app():
         )
 
     @app.get("/json/date/{date}", tags=["Views"])
-    def get_json_date(date: str = None, from_cache: bool = True, sensors: Optional[str] = None):
+    def get_json_date(date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
         """Returns the daily data for the supplied **{date}**.
 
         - **{date}**: A date in YYYY-MM-DD format
@@ -89,7 +89,7 @@ def create_app():
         return get_data(parsed_date, from_cache, sensors)
 
     @app.get("/json/range/{from_date}/{to_date}", tags=["Views"])
-    def get_json_range(from_date: str, to_date: str, from_cache: bool = True,
+    def get_json_range(from_date: str, to_date: str, from_cache: bool = False,
                        sensors: Optional[str] = None):
         """Returns the range data for the supplied range, from **{from_date}** to **{to_date}**.
 
@@ -110,7 +110,7 @@ def create_app():
         return get_range_data(from_date, to_date, from_cache, sensors)
 
     @app.get("/plot/date/{date}", tags=["Experimental"])
-    def get_plot_date(date: str = None, from_cache: bool = True, sensors: Optional[str] = None):
+    def get_plot_date(date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
         """Returns the plot of the specified data, as a JPEG image.
 
         - **{date}**: A date in YYYY-MM-DD format
@@ -130,7 +130,7 @@ def create_app():
         return FileResponse(plot_path, media_type="image/jpeg")
 
     @app.get("/plot/range/{from_date}/{to_date}", tags=["Experimental"])
-    def get_plot_range(from_date: str, to_date: str, from_cache: bool = True,
+    def get_plot_range(from_date: str, to_date: str, from_cache: bool = False,
                        sensors: Optional[str] = None):
         """Under construction :)"""
         return JSONResponse(
@@ -139,7 +139,7 @@ def create_app():
         )
 
     @app.get("/json/date/{date}/consumption", tags=["Views"])
-    def get_json_date_consumption(date: str = None, from_cache: bool = True):
+    def get_json_date_consumption(date: str = None, from_cache: bool = False):
         """Returns the power consumption for the given date.
 
         - **{date}**: A date in YYYY-MM-DD format
