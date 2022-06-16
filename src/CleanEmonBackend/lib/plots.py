@@ -20,9 +20,6 @@ def timestamp_to_label(stamp):
 
     dt = datetime.fromtimestamp(stamp)
 
-    # Temporary fix of the offset bug. Future version should re-implement the way time is measured in first place
-    dt += timedelta(hours=3)
-
     return dt.strftime("%H:%M:%S")
 
 

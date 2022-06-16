@@ -111,7 +111,11 @@ def energy_data_to_dataframe(data: EnergyData, timestamp_label: str = "timestamp
     df = df.rename(columns={"index": timestamp_label})
 
     # Get back the python timestamp format
-    df[timestamp_label] = df[timestamp_label].apply(lambda x: x.strftime('%s'))
+    df[timestamp_label] = df[timestamp_label].apply(lambda x: x.timestamp())
+
+    # Convert to string
+    df[timestamp_label] = df[timestamp_label].astype(str)
+
     return df
 
 
