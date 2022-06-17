@@ -41,6 +41,9 @@ def plot_data(energy_data: EnergyData, *, columns: List[str] = None, name="plot"
         time = df.index
 
     for col, data in df.iteritems():
+        # Skip any timestamp-like label
+        if "timestamp" in str(col).lower():
+            continue
         # Filter only selected columns
         if (columns and str(col).lower() in columns) or (not columns):
             plt.plot(time, data, label=col)
