@@ -5,6 +5,7 @@ from typing import List
 
 from matplotlib import pyplot as plt
 import pandas as pd
+import numpy as np
 
 from CleanEmonCore.models import EnergyData
 
@@ -46,7 +47,8 @@ def plot_data(energy_data: EnergyData, *, columns: List[str] = None, name="plot"
             continue
         # Filter only selected columns
         if (columns and str(col).lower() in columns) or (not columns):
-            plt.plot(time, data, label=col)
+            mask = np.isfinite(data)
+            plt.plot(time[mask], data[mask], label=col)
     skip = len(time) // 15
 
     plt.subplots_adjust(bottom=0.25)
