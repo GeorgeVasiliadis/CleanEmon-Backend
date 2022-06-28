@@ -3,8 +3,6 @@ import os
 from CleanEmonCore.dotfiles import get_dotfile
 from CleanEmonCore.dotfiles import DOT_DIR_PATH
 
-from .setup import generate_nilm_inference_apis_config
-
 DATA_DIR = os.path.join(DOT_DIR_PATH, "data")
 RES_DIR = os.path.join(DOT_DIR_PATH, "res")
 
@@ -17,7 +15,7 @@ PLOT_DIR = os.path.join(DATA_DIR, "plots")
 
 # --- NILM-Inference-APIs ---
 _NILM_CONFIG = "NILM-Inference-APIs.path"
-NILM_CONFIG = get_dotfile(_NILM_CONFIG, generate_nilm_inference_apis_config)
+NILM_CONFIG = get_dotfile(_NILM_CONFIG)
 with open(NILM_CONFIG, "r") as f_in:
     NILM_INFERENCE_APIS_DIR = f_in.read().strip()
 
