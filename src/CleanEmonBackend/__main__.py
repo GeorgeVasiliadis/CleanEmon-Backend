@@ -34,7 +34,7 @@ elif "script_name" in args:
         if args.dates:
             disaggregate(*args.dates, no_prompt=args.no_safe)
         else:
-            print("You should provide at least on date")
+            print("You should provide at least one date")
 
 elif "setup_name" in args:
     if args.setup_name == "nilm":
