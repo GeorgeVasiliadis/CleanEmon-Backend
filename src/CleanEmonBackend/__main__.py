@@ -30,7 +30,7 @@ if "service_name" in args:
 
 elif "script_name" in args:
     if args.script_name == "disaggregate":
-        from scripts.disaggregate import disaggregate
+        from CleanEmonBackend.scripts.disaggregate import disaggregate
         if args.dates:
             disaggregate(*args.dates, no_prompt=args.no_safe)
         else:
@@ -39,6 +39,6 @@ elif "script_name" in args:
 elif "setup_name" in args:
     if args.setup_name == "nilm":
         from . import NILM_CONFIG
-        from scripts.setup import generate_nilm_inference_apis_config
+        from CleanEmonBackend.scripts.setup import generate_nilm_inference_apis_config
 
         generate_nilm_inference_apis_config(NILM_CONFIG)
