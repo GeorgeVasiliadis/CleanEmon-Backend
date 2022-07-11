@@ -139,7 +139,7 @@ def create_app():
         )
 
     @app.get("/json/date/{date}/consumption", tags=["Views"])
-    def get_json_date_consumption(date: str = None, from_cache: bool = False):
+    def get_json_date_consumption(date: str = None, from_cache: bool = False, simplify: bool = False):
         """Returns the power consumption for the given date.
 
         - **{date}**: A date in YYYY-MM-DD format
@@ -149,6 +149,6 @@ def create_app():
 
         parsed_date = parse_date(date)
 
-        return get_date_consumption(parsed_date, from_cache)
+        return get_date_consumption(parsed_date, from_cache, simplify)
 
     return app

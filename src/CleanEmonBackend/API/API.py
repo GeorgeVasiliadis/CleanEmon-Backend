@@ -86,7 +86,7 @@ def get_plot(date: str, from_cache: bool, sensors: List[str] = None) -> str:
     return os.path.join(RES_DIR, f_out)
 
 
-def get_date_consumption(date: str, from_cache: bool) -> Dict:
+def get_date_consumption(date: str, from_cache: bool, simplify: bool):
     """Hardcoded fetch-prepare accumulator function that handles the daily KwH. Returns the daily consumption in kwh.
 
     Acts as an under-the-curve measurement by subtracting the lowest power measurement from the highest one.
@@ -95,6 +95,7 @@ def get_date_consumption(date: str, from_cache: bool) -> Dict:
 
     date -- a valid date string in `YYYY-MM-DD` format
     from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
+    simplify -- if true, returns a single value, not a JSON object
     """
 
     data = get_data(date, from_cache)
@@ -116,9 +117,12 @@ def get_date_consumption(date: str, from_cache: bool) -> Dict:
             break
 
     consumption = last_valid - first_valid
-    data = {
-        "consumption": consumption,
-        "unit": "kwh"
-    }
+    if simplify:
+        data = consumption
+    else:
+        data = {
+            "consumption": consumption,
+            "unit": "kwh"
+        }
 
     return data
