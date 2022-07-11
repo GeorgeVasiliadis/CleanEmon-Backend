@@ -16,6 +16,7 @@ def create_app():
     from .API import get_range_data
     from .API import get_date_consumption
     from .API import get_plot
+    from .API import get_meta
 
     from ..lib.exceptions import BadDateError
     from ..lib.exceptions import BadDateRangeError
@@ -150,5 +151,16 @@ def create_app():
         parsed_date = parse_date(date)
 
         return get_date_consumption(parsed_date, from_cache, simplify)
+
+    @app.get("/meta/", tags=["Experimental"])
+    @app.get("/meta/{field}", tags=["Experimental"])
+    def get_json_meta(field: str = None):
+        """Returns the metadata for the current house.
+
+        - **{meta}**: Optional endpoint that specifies the field to be returned if it exists in metadata, otherwise an
+        empty dict will be returned. If omitted, all meta fields will be returned.
+        """
+
+        return get_meta(field)
 
     return app

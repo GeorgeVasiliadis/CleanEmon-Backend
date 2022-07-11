@@ -11,6 +11,7 @@ from CleanEmonCore.models import EnergyData
 
 from .. import RES_DIR
 from ..lib.DBConnector import fetch_data
+from ..lib.DBConnector import adapter
 from ..lib.plots import plot_data
 
 
@@ -126,3 +127,13 @@ def get_date_consumption(date: str, from_cache: bool, simplify: bool):
         }
 
     return data
+
+
+def get_meta(field: str = None) -> Dict:
+    meta = adapter.fetch_meta()
+    if not field:
+        return meta
+    else:
+        if field in meta:
+            return meta[field]
+    return {}
