@@ -17,6 +17,7 @@ def create_app():
     from .API import get_date_consumption
     from .API import get_plot
     from .API import get_meta
+    from .API import has_meta
 
     from ..lib.exceptions import BadDateError
     from ..lib.exceptions import BadDateRangeError
@@ -162,5 +163,12 @@ def create_app():
         """
 
         return get_meta(field)
+
+    @app.get("/has-meta/{field}", tags=["Experimental"])
+    def get_has_meta(field: str):
+        """Returns true if given **{field}** exists as metadata field, and it is not equal to string "null".
+        """
+
+        return has_meta(field)
 
     return app

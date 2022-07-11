@@ -137,3 +137,13 @@ def get_meta(field: str = None) -> Dict:
         if field in meta:
             return meta[field]
     return {}
+
+
+def has_meta(field: str) -> bool:
+    meta = get_meta()
+
+    if field not in meta:
+        return False
+
+    value = meta[field]
+    return value != "null"
