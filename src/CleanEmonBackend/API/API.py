@@ -6,6 +6,8 @@ from datetime import timedelta
 
 from typing import List
 from typing import Dict
+from typing import Union
+from typing import Any
 
 from CleanEmonCore.models import EnergyData
 
@@ -129,7 +131,27 @@ def get_date_consumption(date: str, from_cache: bool, simplify: bool):
     return data
 
 
-def get_meta(field: str = None) -> Dict:
+def get_mean_consumption(date: str, from_cache: bool) -> float:
+    """Hardcoded fetch-prepare function that returns the daily consumption over the size of the building.
+    If the given building has no appropriate information (e.g. no "size" meta-data) -1 is being returned.
+
+    Mean Consumption is calculated as:  daily_consumption_of_date  /  size_of_building
+
+    date -- a valid date string in `YYYY-MM-DD` format
+    from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
+    """
+    _size_field = "size"  # Hardcoded field - get_meta is not intended to be used in this way
+
+    consumption: float = get_date_consumption(date, from_cache, simplify=True)
+
+    if has_meta(_size_field):
+        size = float(get_meta(_size_field))
+        if size:
+            return consumption / size
+    return -1
+
+
+def get_meta(field: str = None) -> Union[Dict, Any]:
     meta = adapter.fetch_meta()
     if not field:
         return meta

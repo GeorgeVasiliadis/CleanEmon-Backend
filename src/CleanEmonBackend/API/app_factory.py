@@ -15,6 +15,7 @@ def create_app():
     from .API import get_data
     from .API import get_range_data
     from .API import get_date_consumption
+    from .API import get_mean_consumption
     from .API import get_plot
     from .API import get_meta
     from .API import has_meta
@@ -146,12 +147,25 @@ def create_app():
 
         - **{date}**: A date in YYYY-MM-DD format
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
-        data will be looked up in cache and then, if they are not found, fetched from the central database.
+        data will be looked up in cache and then, if they are not found, fetched from the central database
+        - **simplify**: If set to True, only the pure numerical value will be returned
         """
 
         parsed_date = parse_date(date)
 
         return get_date_consumption(parsed_date, from_cache, simplify)
+
+    @app.get("/json/date/{date}/mean-consumption", tags=["Experimental"])
+    def get_json_date_mean_consumption(date: str = None, from_cache: bool = False):
+        """Returns the power consumption over the size of the building for the given date.
+
+        - **{date}**: A date in YYYY-MM-DD format
+        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
+        data will be looked up in cache and then, if they are not found, fetched from the central database
+        """
+        parsed_date = parse_date(date)
+
+        return get_mean_consumption(parsed_date, from_cache)
 
     @app.get("/meta/", tags=["Experimental"])
     @app.get("/meta/{field}", tags=["Experimental"])
