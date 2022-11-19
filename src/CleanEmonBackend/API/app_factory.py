@@ -73,17 +73,17 @@ def create_app():
                                 f"be in ISO format (YYYY-MM-DD) and placed in correct order."}
         )
 
-    @app.get("/json/date/{date}", tags=["Views"])
-    def get_json_date(date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
-        """Returns the daily data for the supplied **{date}**.
-
+    @app.get("id/{id}/json/date/{date}", tags=["Views"])
+    def get_json_date(id_:str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
+        """Returns the daily data the supplied **{date}** for the device with **{id}**.
+        - **{id}**: The ID of the device.
         - **{date}**: A date in YYYY-MM-DD format
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database.
         - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
         list will be returned
         """
-
+        print(id_)
         parsed_date = parse_date(date)
 
         if sensors:
@@ -91,11 +91,11 @@ def create_app():
 
         return get_data(parsed_date, from_cache, sensors)
 
-    @app.get("/json/range/{from_date}/{to_date}", tags=["Views"])
-    def get_json_range(from_date: str, to_date: str, from_cache: bool = False,
+    @app.get("id/{id}/json/range/{from_date}/{to_date}", tags=["Views"])
+    def get_json_range(id_:str, from_date: str, to_date: str, from_cache: bool = False,
                        sensors: Optional[str] = None):
-        """Returns the range data for the supplied range, from **{from_date}** to **{to_date}**.
-
+        """Returns the range data for the supplied range, from **{from_date}** to **{to_date}** for the device with **{id}**.
+        - **{id_}**: The ID of the device.
         - **{from_date}**: A date in YYYY-MM-DD format
         - **to_date**: A date in YYYY-MM-DD format. It should be chronologically greater or equal to **{from_date}**
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
@@ -112,10 +112,10 @@ def create_app():
 
         return get_range_data(from_date, to_date, from_cache, sensors)
 
-    @app.get("/plot/date/{date}", tags=["Experimental"])
-    def get_plot_date(date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
-        """Returns the plot of the specified data, as a JPEG image.
-
+    @app.get("id/{id}/plot/date/{date}", tags=["Experimental"])
+    def get_plot_date(id_:str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
+        """Returns the plot of the specified data, as a JPEG image, for the device with **{id}**.
+        - **{id_}**: The ID of the device.
         - **{date}**: A date in YYYY-MM-DD format
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database.
@@ -132,8 +132,8 @@ def create_app():
 
         return FileResponse(plot_path, media_type="image/jpeg")
 
-    @app.get("/plot/range/{from_date}/{to_date}", tags=["Experimental"])
-    def get_plot_range(from_date: str, to_date: str, from_cache: bool = False,
+    @app.get("id/{id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
+    def get_plot_range(id_:str, from_date: str, to_date: str, from_cache: bool = False,
                        sensors: Optional[str] = None):
         """Under construction :)"""
         return JSONResponse(
@@ -141,10 +141,10 @@ def create_app():
             content={"message": "This feature is currently not implemented"}
         )
 
-    @app.get("/json/date/{date}/consumption", tags=["Views"])
-    def get_json_date_consumption(date: str = None, from_cache: bool = False, simplify: bool = False):
+    @app.get("id/{id}/json/date/{date}/consumption", tags=["Views"])
+    def get_json_date_consumption(id_:str = None, date: str = None, from_cache: bool = False, simplify: bool = False):
         """Returns the power consumption for the given date.
-
+        - **{id_}**: The ID of the device.
         - **{date}**: A date in YYYY-MM-DD format
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database
@@ -155,10 +155,10 @@ def create_app():
 
         return get_date_consumption(parsed_date, from_cache, simplify)
 
-    @app.get("/json/date/{date}/mean-consumption", tags=["Experimental"])
-    def get_json_date_mean_consumption(date: str = None, from_cache: bool = False):
+    @app.get("id/{id}/json/date/{date}/mean-consumption", tags=["Experimental"])
+    def get_json_date_mean_consumption(id_:str = None, date: str = None, from_cache: bool = False):
         """Returns the power consumption over the size of the building for the given date.
-
+        - **{id_}**: The ID of the device.
         - **{date}**: A date in YYYY-MM-DD format
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database
@@ -167,19 +167,19 @@ def create_app():
 
         return get_mean_consumption(parsed_date, from_cache)
 
-    @app.get("/meta/", tags=["Experimental"])
-    @app.get("/meta/{field}", tags=["Experimental"])
-    def get_json_meta(field: str = None):
+    @app.get("id/{id}/meta/", tags=["Experimental"])
+    @app.get("id/{id}/meta/{field}", tags=["Experimental"])
+    def get_json_meta(id_:str = None, field: str = None):
         """Returns the metadata for the current house.
-
+        - **{id_}**: The ID of the device.
         - **{meta}**: Optional endpoint that specifies the field to be returned if it exists in metadata, otherwise an
         empty dict will be returned. If omitted, all meta fields will be returned.
         """
 
         return get_meta(field)
 
-    @app.get("/has-meta/{field}", tags=["Experimental"])
-    def get_has_meta(field: str):
+    @app.get("id/{id}/has-meta/{field}", tags=["Experimental"])
+    def get_has_meta(id_:str, field: str):
         """Returns true if given **{field}** exists as metadata field, and it is not equal to string "null".
         """
 
