@@ -73,7 +73,7 @@ def create_app():
                                 f"be in ISO format (YYYY-MM-DD) and placed in correct order."}
         )
 
-    @app.get("dev_id/{dev_id}/json/date/{date}", tags=["Views"])
+    @app.get("dev_id/{dev_id}/json/date/{date}", tags=["Views"]) # TODO Actually use the supplied dev_id
     def get_json_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
         """Returns the daily data the supplied **{date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
