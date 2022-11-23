@@ -17,7 +17,7 @@ from ..lib.DBConnector import adapter
 from ..lib.plots import plot_data
 
 
-def get_data(date: str, from_cache: bool, sensors: List[str] = None) -> EnergyData:
+def get_data(date: str, from_cache: bool, sensors: List[str] = None, db: str = None) -> EnergyData:
     """Fetches and prepares the daily data that will be returned, filtering in the provided `sensors`.
     Note that there is no need to explicitly specify the "timestamp sensor", as it will always be included.
 
@@ -26,7 +26,7 @@ def get_data(date: str, from_cache: bool, sensors: List[str] = None) -> EnergyDa
     sensors -- an inclusive list containing the values of interest
     """
 
-    raw_data = fetch_data(date, from_cache=from_cache).energy_data
+    raw_data = fetch_data(date, from_cache=from_cache, db=db).energy_data
 
     if sensors:
         if "timestamp" not in sensors:

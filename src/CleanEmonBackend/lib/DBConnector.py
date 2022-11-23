@@ -12,12 +12,11 @@ from .. import CACHE_DIR
 adapter = CouchDBAdapter(CONFIG_FILE)
 
 
-def fetch_data(date_id: str, *, from_cache=False) -> EnergyData:
-
+def fetch_data(date_id: str, *, from_cache=False, db: str = None) -> EnergyData:
     if not os.path.exists(CACHE_DIR):
         os.mkdir(CACHE_DIR)
 
-    name = date_id # TODO Implement a cache solution that works for multipe databases. A good idea for a filename can be date_id + db_name
+    name = date_id  # TODO Implement a cache solution that works for multipe databases. A good idea for a filename can be date_id + db_name
 
     cache_path = os.path.join(CACHE_DIR, name)
 
@@ -37,7 +36,7 @@ def fetch_data(date_id: str, *, from_cache=False) -> EnergyData:
             print("No cached data!")
 
     if not from_cache or not fetch_ok:
-        energy_data = adapter.fetch_energy_data_by_date(date_id)
+        energy_data = adapter.fetch_energy_data_by_date(date_id, db=db)
 
         # Cache data for future use
         with open(cache_path, "w") as fout:

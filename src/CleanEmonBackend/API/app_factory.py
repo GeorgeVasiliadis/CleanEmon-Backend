@@ -73,7 +73,7 @@ def create_app():
                                 f"be in ISO format (YYYY-MM-DD) and placed in correct order."}
         )
 
-    @app.get("dev_id/{dev_id}/json/date/{date}", tags=["Views"]) # TODO Actually use the supplied dev_id
+    @app.get("/dev_id/{dev_id}/json/date/{date}", tags=["Views"])
     def get_json_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
         """Returns the daily data the supplied **{date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
@@ -83,17 +83,17 @@ def create_app():
         - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
         list will be returned
         """
-        print(dev_id)
+
         parsed_date = parse_date(date)
 
         if sensors:
             sensors = sensors.split(',')
 
-        return get_data(parsed_date, from_cache, sensors)
+        return get_data(parsed_date, from_cache, sensors, db=dev_id)
 
-    @app.get("dev_id/{dev_id}/json/range/{from_date}/{to_date}", tags=["Views"])
+    @app.get("/dev_id/{dev_id}/json/range/{from_date}/{to_date}", tags=["Views"])
     def get_json_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,
-                       sensors: Optional[str] = None):
+                       sensors: Optional[str] = None):  # TODO Actually use the supplied dev_id
         """Returns the range data for the supplied range, from **{from_date}** to **{to_date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **{from_date}**: A date in YYYY-MM-DD format
@@ -112,8 +112,9 @@ def create_app():
 
         return get_range_data(from_date, to_date, from_cache, sensors)
 
-    @app.get("dev_id/{dev_id}/plot/date/{date}", tags=["Experimental"])
+    @app.get("/dev_id/{dev_id}/plot/date/{date}", tags=["Experimental"])
     def get_plot_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
+        # TODO Actually use the supplied dev_id
         """Returns the plot of the specified data, as a JPEG image, for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
@@ -132,18 +133,18 @@ def create_app():
 
         return FileResponse(plot_path, media_type="image/jpeg")
 
-    @app.get("dev_id/{dev_id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
+    @app.get("/dev_id/{dev_id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
     def get_plot_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,
-                       sensors: Optional[str] = None):
+                       sensors: Optional[str] = None): # TODO Actually use the supplied dev_id
         """Under construction :)"""
         return JSONResponse(
             status_code=501,
             content={"message": "This feature is currently not implemented"}
         )
 
-    @app.get("dev_id/{dev_id}/json/date/{date}/consumption", tags=["Views"])
+    @app.get("/dev_id/{dev_id}/json/date/{date}/consumption", tags=["Views"])
     def get_json_date_consumption(dev_id: str = None, date: str = None, from_cache: bool = False,
-                                  simplify: bool = False):
+                                  simplify: bool = False): # TODO Actually use the supplied dev_id
         """Returns the power consumption for the given date.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
@@ -156,8 +157,9 @@ def create_app():
 
         return get_date_consumption(parsed_date, from_cache, simplify)
 
-    @app.get("dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
+    @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
     def get_json_date_mean_consumption(dev_id: str = None, date: str = None, from_cache: bool = False):
+        # TODO Actually use the supplied dev_id
         """Returns the power consumption over the size of the building for the given date.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
@@ -168,9 +170,10 @@ def create_app():
 
         return get_mean_consumption(parsed_date, from_cache)
 
-    @app.get("dev_id/{dev_id}/meta/", tags=["Experimental"])
-    @app.get("dev_id/{dev_id}/meta/{field}", tags=["Experimental"])
+    @app.get("/dev_id/{dev_id}/meta/", tags=["Experimental"])
+    @app.get("/dev_id/{dev_id}/meta/{field}", tags=["Experimental"])
     def get_json_meta(dev_id: str = None, field: str = None):
+        # TODO Actually use the supplied dev_id
         """Returns the metadata for the current house.
         - **{dev_id}**: The dev_id of the device.
         - **{meta}**: Optional endpoint that specifies the field to be returned if it exists in metadata, otherwise an
@@ -179,8 +182,9 @@ def create_app():
 
         return get_meta(field)
 
-    @app.get("dev_id/{dev_id}/has-meta/{field}", tags=["Experimental"])
+    @app.get("/dev_id/{dev_id}/has-meta/{field}", tags=["Experimental"])
     def get_has_meta(dev_id: str, field: str):
+        # TODO Actually use the supplied dev_id
         """Returns true if given **{field}** exists as metadata field, and it is not equal to string "null".
         """
 
