@@ -110,7 +110,7 @@ def create_app():
         if sensors:
             sensors = sensors.split(',')
 
-        return get_range_data(from_date, to_date, from_cache, sensors)
+        return get_range_data(from_date, to_date, from_cache, sensors, db = dev_id)
 
     @app.get("/dev_id/{dev_id}/plot/date/{date}", tags=["Experimental"])
     def get_plot_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):

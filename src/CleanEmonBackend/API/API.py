@@ -43,7 +43,7 @@ def get_data(date: str, from_cache: bool, sensors: List[str] = None, db: str = N
     return EnergyData(date, data)
 
 
-def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[str] = None) -> Dict:
+def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[str] = None, db: str = None) -> Dict:
     """Fetches and prepares the range data that will be returned.
 
     from_date -- a valid date string in `YYYY-MM-DD` format
@@ -68,7 +68,7 @@ def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[
     now = from_dt
     while now <= to_dt:
         now_str = now.strftime("%Y-%m-%d")
-        daily_data = get_data(now_str, use_cache, sensors)
+        daily_data = get_data(now_str, use_cache, sensors, db=db)
         data["range_data"].append(daily_data)
         now += one_day
 
