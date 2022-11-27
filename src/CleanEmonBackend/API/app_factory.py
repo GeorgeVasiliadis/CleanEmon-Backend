@@ -135,7 +135,7 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
     def get_plot_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,
-                       sensors: Optional[str] = None):  # TODO Actually use the supplied dev_id
+                       sensors: Optional[str] = None):  # TODO Maybe implemented this feature if is necessary.
         """Under construction :)"""
         return JSONResponse(
             status_code=501,
@@ -155,7 +155,7 @@ def create_app():
 
         parsed_date = parse_date(date)
 
-        return get_date_consumption(parsed_date, from_cache, simplify)
+        return get_date_consumption(parsed_date, from_cache, simplify, db=dev_id)
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
     def get_json_date_mean_consumption(dev_id: str = None, date: str = None, from_cache: bool = False):
