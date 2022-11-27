@@ -93,7 +93,7 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/range/{from_date}/{to_date}", tags=["Views"])
     def get_json_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,
-                       sensors: Optional[str] = None):  # TODO Actually use the supplied dev_id
+                       sensors: Optional[str] = None):
         """Returns the range data for the supplied range, from **{from_date}** to **{to_date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **{from_date}**: A date in YYYY-MM-DD format
