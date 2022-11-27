@@ -188,6 +188,6 @@ def create_app():
         """Returns true if given **{field}** exists as metadata field, and it is not equal to string "null".
         """
 
-        return has_meta(field)
+        return has_meta(field, db=dev_id)
 
     return app

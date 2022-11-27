@@ -131,7 +131,7 @@ def get_date_consumption(date: str, from_cache: bool, simplify: bool, db:str = N
     return data
 
 
-def get_mean_consumption(date: str, from_cache: bool) -> float:
+def get_mean_consumption(date: str, from_cache: bool, db: str = None) -> float:
     """Hardcoded fetch-prepare function that returns the daily consumption over the size of the building.
     If the given building has no appropriate information (e.g. no "size" meta-data) -1 is being returned.
 
@@ -142,7 +142,7 @@ def get_mean_consumption(date: str, from_cache: bool) -> float:
     """
     _size_field = "size"  # Hardcoded field - get_meta is not intended to be used in this way
 
-    consumption: float = get_date_consumption(date, from_cache, simplify=True)
+    consumption: float = get_date_consumption(date, from_cache, simplify=True, db=db)
 
     if has_meta(_size_field):
         size = float(get_meta(_size_field))
@@ -151,8 +151,8 @@ def get_mean_consumption(date: str, from_cache: bool) -> float:
     return -1
 
 
-def get_meta(field: str = None) -> Union[Dict, Any]:
-    meta = adapter.fetch_meta()
+def get_meta(field: str = None, db: str = None) -> Union[Dict, Any]:
+    meta = adapter.fetch_meta(db=db)
     if not field:
         return meta
     else:
@@ -161,8 +161,8 @@ def get_meta(field: str = None) -> Union[Dict, Any]:
     return {}
 
 
-def has_meta(field: str) -> bool:
-    meta = get_meta()
+def has_meta(field: str, db: str = None) -> bool:
+    meta = get_meta(db=db)
 
     if field not in meta:
         return False
