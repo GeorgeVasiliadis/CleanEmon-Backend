@@ -110,7 +110,7 @@ def create_app():
         if sensors:
             sensors = sensors.split(',')
 
-        return get_range_data(from_date, to_date, from_cache, sensors, db = dev_id)
+        return get_range_data(from_date, to_date, from_cache, sensors, db=dev_id)
 
     @app.get("/dev_id/{dev_id}/plot/date/{date}", tags=["Experimental"])
     def get_plot_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
@@ -135,7 +135,7 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
     def get_plot_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,
-                       sensors: Optional[str] = None): # TODO Actually use the supplied dev_id
+                       sensors: Optional[str] = None):  # TODO Actually use the supplied dev_id
         """Under construction :)"""
         return JSONResponse(
             status_code=501,
@@ -144,7 +144,7 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/consumption", tags=["Views"])
     def get_json_date_consumption(dev_id: str = None, date: str = None, from_cache: bool = False,
-                                  simplify: bool = False): # TODO Actually use the supplied dev_id
+                                  simplify: bool = False):  # TODO Actually use the supplied dev_id
         """Returns the power consumption for the given date.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
