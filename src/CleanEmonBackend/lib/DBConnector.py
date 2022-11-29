@@ -21,7 +21,7 @@ def fetch_data(date_id: str, *, from_cache=False, db: str = None) -> EnergyData:
     cache_path = os.path.join(CACHE_DIR, name)
 
     fetch_ok = False
-    from_cache = False # TODO Cache reading is disabled right now.
+    from_cache = False  # TODO Cache reading is disabled right now.
     energy_data = EnergyData()
 
     if from_cache:
