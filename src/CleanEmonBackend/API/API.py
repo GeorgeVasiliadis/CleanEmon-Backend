@@ -75,7 +75,7 @@ def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[
     return data
 
 
-def get_plot(date: str, from_cache: bool, sensors: List[str] = None) -> str:
+def get_plot(date: str, from_cache: bool, sensors: List[str] = None, db: str = None) -> str:
     """Fetches and plots the desired data. Returns the path of the resulting plot.
 
     date -- a valid date string in `YYYY-MM-DD` format
@@ -83,13 +83,13 @@ def get_plot(date: str, from_cache: bool, sensors: List[str] = None) -> str:
     sensors -- an inclusive list containing the values of interest
     """
 
-    energy_data = get_data(date, from_cache, sensors)
+    energy_data = get_data(date, from_cache, sensors, db=db)
     f_out = plot_data(energy_data, columns=sensors)
 
     return os.path.join(RES_DIR, f_out)
 
 
-def get_date_consumption(date: str, from_cache: bool, simplify: bool, db:str = None):
+def get_date_consumption(date: str, from_cache: bool, simplify: bool, db: str = None):
     """Hardcoded fetch-prepare accumulator function that handles the daily KwH. Returns the daily consumption in kwh.
 
     Acts as an under-the-curve measurement by subtracting the lowest power measurement from the highest one.

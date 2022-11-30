@@ -114,7 +114,6 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/plot/date/{date}", tags=["Experimental"])
     def get_plot_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
-        # TODO Actually use the supplied dev_id
         """Returns the plot of the specified data, as a JPEG image, for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
@@ -129,7 +128,7 @@ def create_app():
         if sensors:
             sensors = sensors.split(',')
 
-        plot_path = get_plot(parsed_date, from_cache, sensors)
+        plot_path = get_plot(parsed_date, from_cache, sensors, db=dev_id)
 
         return FileResponse(plot_path, media_type="image/jpeg")
 
@@ -144,7 +143,7 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/consumption", tags=["Views"])
     def get_json_date_consumption(dev_id: str = None, date: str = None, from_cache: bool = False,
-                                  simplify: bool = False):  # TODO Actually use the supplied dev_id
+                                  simplify: bool = False):
         """Returns the power consumption for the given date.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
@@ -159,7 +158,6 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
     def get_json_date_mean_consumption(dev_id: str = None, date: str = None, from_cache: bool = False):
-        # TODO Actually use the supplied dev_id
         """Returns the power consumption over the size of the building for the given date.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
@@ -168,24 +166,22 @@ def create_app():
         """
         parsed_date = parse_date(date)
 
-        return get_mean_consumption(parsed_date, from_cache)
+        return get_mean_consumption(parsed_date, from_cache, db=dev_id)
 
     @app.get("/dev_id/{dev_id}/meta/", tags=["Experimental"])
     @app.get("/dev_id/{dev_id}/meta/{field}", tags=["Experimental"])
     def get_json_meta(dev_id: str = None, field: str = None):
-        # TODO Actually use the supplied dev_id
         """Returns the metadata for the current house.
         - **{dev_id}**: The dev_id of the device.
         - **{meta}**: Optional endpoint that specifies the field to be returned if it exists in metadata, otherwise an
         empty dict will be returned. If omitted, all meta fields will be returned.
         """
 
-        return get_meta(field)
+        return get_meta(field, db=dev_id)
 
     @app.get("/dev_id/{dev_id}/has-meta/{field}", tags=["Experimental"])
     def get_has_meta(dev_id: str, field: str):
-        # TODO Actually use the supplied dev_id
-        """Returns true if given **{field}** exists as metadata field, and it is not equal to string "null".
+        """Returns true if given **{field}** exists as metadata field for device with **{field}** , and it is not equal to string "null".
         """
 
         return has_meta(field, db=dev_id)
