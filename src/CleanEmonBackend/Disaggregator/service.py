@@ -12,7 +12,7 @@ from ..Disaggregator import dataframe_to_energy_data
 from ..Disaggregator import disaggregate
 
 
-def update(yesterday: str):
+def update(yesterday: str): # TODO Implement a per device disaggregation method
     energy_data = fetch_data(yesterday)
     df = energy_data_to_dataframe(energy_data)
 
