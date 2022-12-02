@@ -12,7 +12,9 @@ from ..Disaggregator import dataframe_to_energy_data
 from ..Disaggregator import disaggregate
 
 
-def update(yesterday: str): # TODO Implement a per device disaggregation method
+def update(yesterday: str):  # TODO Implement a per device disaggregation
+    # Why? Right now the disaggregation will occur for only one device.
+    # How? There should be a list of devices (different databases).
     energy_data = fetch_data(yesterday)
     df = energy_data_to_dataframe(energy_data)
 
