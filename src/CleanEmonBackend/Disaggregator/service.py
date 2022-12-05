@@ -12,12 +12,12 @@ from ..Disaggregator import dataframe_to_energy_data
 from ..Disaggregator import disaggregate
 
 
-def update(yesterday: str):  # TODO Implement a per device disaggregation
-    # Why? Right now the disaggregation will occur for only one device.
-    # How? There should be a list of devices (different databases).
+def update(yesterday: str):
+    # Right now the disaggregation will occur for only one device, list devices has one element.
+    # There should be a list of devices (different databases).
     # Improvements maybe create a parallel processing of each device energy_data.
-
-    devices = ['emon01']  # Improvement: Create a class devices, that reads all the devices (CouchDB or a local file.)
+    # TODO Improvement: Create a class devices, that reads all the devices form either CouchDB or a local file.
+    devices = ['emon01']
     for device in devices:
         energy_data = fetch_data(yesterday, db=device)
         df = energy_data_to_dataframe(energy_data)
