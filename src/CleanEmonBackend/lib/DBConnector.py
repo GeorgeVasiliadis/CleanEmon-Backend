@@ -45,5 +45,5 @@ def fetch_data(date_id: str, *, from_cache=False, db: str = None) -> EnergyData:
     return energy_data
 
 
-def send_data(date_id: str, data: EnergyData, db: str = None):  # TODO Add db option here. Why? Because disaggregator needs to send_data to CouchDB.
+def send_data(date_id: str, data: EnergyData, db: str = None):
     return adapter.update_energy_data_by_date(date_id, data, db=db)
