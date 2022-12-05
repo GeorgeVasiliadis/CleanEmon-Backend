@@ -15,12 +15,16 @@ from ..Disaggregator import disaggregate
 def update(yesterday: str):  # TODO Implement a per device disaggregation
     # Why? Right now the disaggregation will occur for only one device.
     # How? There should be a list of devices (different databases).
-    energy_data = fetch_data(yesterday)
-    df = energy_data_to_dataframe(energy_data)
+    # Improvements maybe create a parallel processing of each device energy_data.
 
-    df = disaggregate(df)
-    dis_energy_data = dataframe_to_energy_data(df)
-    send_data(yesterday, dis_energy_data)
+    devices = ['emon01']  # Improvement: Create a class devices, that reads all the devices (CouchDB or a local file.)
+    for device in devices:
+        energy_data = fetch_data(yesterday, db=device)
+        df = energy_data_to_dataframe(energy_data)
+
+        df = disaggregate(df)
+        dis_energy_data = dataframe_to_energy_data(df)
+        send_data(yesterday, dis_energy_data, db=device)
 
 
 def run():
