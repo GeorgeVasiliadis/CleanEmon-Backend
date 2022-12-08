@@ -20,9 +20,3 @@ class Devices:
             return True
         else:
             return False
-
-
-# if __name__ == '__main__':
-#     x = Devices()
-#     z = x.get_devices()
-#     print(z)
