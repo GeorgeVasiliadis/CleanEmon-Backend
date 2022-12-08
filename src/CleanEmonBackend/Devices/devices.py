@@ -2,26 +2,15 @@
 import json
 
 from CleanEmonCore import DEVICES_FILE
-
-
-def read_json_file(path):
-    with open(path) as json_file:
-        data = json.load(json_file)
-    return data
+from CleanEmonCore.json_utils.json_reader import read_json_file
+from CleanEmonCore.json_utils.json_schema_validator import verify_json
 
 
 class Devices:
     """Devices class used to just to check to parse the JSON file under the .CleanEmon directory."""
-    def __init__(self):
-        try:
-            self.devices = read_json_file(DEVICES_FILE)['devices']
 
-            self.devices_set = set(self.devices)
-            self.__validate_input()
-        except KeyError:
-            print("ERROR!\nThe provided Devices JSON is in wrong form.\nCheck the schema")
-        except json.JSONDecodeError:
-            print("ERROR!\nThe provided JSON file is not a valid JSON!\nCheck the schema")
+    def __init__(self):
+        self.devices = verify_json(read_json_file(DEVICES_FILE))['devices']
 
     def get_devices(self):
         return self.devices
@@ -32,20 +21,8 @@ class Devices:
         else:
             return False
 
-    def __validate_input(self):
-        if not self.__is_unique():
-            print("Found duplicate device names")
-
-    def __is_unique(self) -> bool:
-        # Check if duplicate name for devices exist
-        if len(self.devices) == len(self.devices_set):
-            return True
-        else:
-            return False
-
 
 # if __name__ == '__main__':
 #     x = Devices()
 #     z = x.get_devices()
 #     print(z)
-
