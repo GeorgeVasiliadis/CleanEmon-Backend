@@ -16,12 +16,11 @@ def fetch_data(date_id: str, *, from_cache=False, db: str = None) -> EnergyData:
     if not os.path.exists(CACHE_DIR):
         os.mkdir(CACHE_DIR)
 
-    name = date_id  # TODO Implement a cache solution that works for multipe databases. A good idea for a filename can be date_id + db_name
+    name = date_id+db
 
     cache_path = os.path.join(CACHE_DIR, name)
 
     fetch_ok = False
-    from_cache = False  # TODO Cache reading is disabled right now.
     energy_data = EnergyData()
 
     if from_cache:
