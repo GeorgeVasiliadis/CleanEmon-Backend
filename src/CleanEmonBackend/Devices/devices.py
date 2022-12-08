@@ -11,6 +11,7 @@ def read_json_file(path):
 
 
 class Devices:
+    """Devices class used to just to check to parse the JSON file under the .CleanEmon directory."""
     def __init__(self):
         try:
             self.devices = read_json_file(DEVICES_FILE)['devices']
