@@ -23,7 +23,6 @@ def _set_inference_input(df: pd.DataFrame) -> bool:
 
 def _disaggregate_to_files() -> List[Tuple[str, str]]:
     with nilm_path_fix():
-
         # ------------------------------------------------------#
         # Extremely ~spooky~ and error prune piece of code      #
         # Just for the history, this was deprecated since the   #
@@ -35,7 +34,8 @@ def _disaggregate_to_files() -> List[Tuple[str, str]]:
         from constants.enumerates import ElectricalAppliances
 
         # Consider all known devices
-        devices = list(ElectricalAppliances)
+        devices = list(ElectricalAppliances)  # Here devices should not be confused with Device class (EmonPi) but
+        # rather the Electrical Appliances devices.
         devices = [dev.value for dev in devices]
 
         return nilm_inference(devices=devices, sample_period=5, inference_cpu=True)
