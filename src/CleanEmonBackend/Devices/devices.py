@@ -1,9 +1,8 @@
 """This module defines the devices"""
-import json
 
 from CleanEmonCore import DEVICES_FILE
-from CleanEmonCore.json_utils.schemas import schema_devices
 from CleanEmonCore.json_utils.json_utils import verify_json, read_json_file
+from CleanEmonCore.json_utils.schemas import schema_devices
 
 
 class Devices:
@@ -11,6 +10,7 @@ class Devices:
 
     def __init__(self):
         self.devices = verify_json(read_json_file(DEVICES_FILE), schema_devices)['devices']
+        self.devices_set = dict(self.devices)
 
     def get_devices(self):
         return self.devices
