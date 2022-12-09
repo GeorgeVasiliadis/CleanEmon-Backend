@@ -10,7 +10,7 @@ class Devices:
 
     def __init__(self):
         self.devices = verify_json(read_json_file(DEVICES_FILE), schema_devices)['devices']
-        self.devices_set = dict(self.devices)
+        self.devices_set = set(self.devices)
 
     def get_devices(self):
         return self.devices
