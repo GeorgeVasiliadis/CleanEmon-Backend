@@ -23,6 +23,7 @@ def create_app():
     from .API import get_plot
     from .API import get_meta
     from .API import has_meta
+    from .API import set_meta_field
 
     from ..lib.exceptions import BadDateError
     from ..lib.exceptions import BadDateRangeError
@@ -39,6 +40,10 @@ def create_app():
         {
             "name": "Experimental",
             "description": "Cutting-edge features that may not be stable yet"
+        },
+        {
+            "name": "Metadata",
+            "description": "Access, edit metadata"
         }
     ]
 
@@ -194,8 +199,8 @@ def create_app():
 
         return get_mean_consumption(parsed_date, from_cache, db=dev_id)
 
-    @app.get("/dev_id/{dev_id}/meta/", tags=["Experimental"])
-    @app.get("/dev_id/{dev_id}/meta/{field}", tags=["Experimental"])
+    @app.get("/dev_id/{dev_id}/meta/", tags=["Metadata"])
+    @app.get("/dev_id/{dev_id}/meta/{field}", tags=["Metadata"])
     def get_json_meta(dev_id: str = None, field: str = None):
         """Returns the metadata for the current house.
         - **{dev_id}**: The dev_id of the device.
@@ -205,11 +210,19 @@ def create_app():
         check_device_existence(dev_id)
         return get_meta(field, db=dev_id)
 
-    @app.get("/dev_id/{dev_id}/has-meta/{field}", tags=["Experimental"])
+    @app.get("/dev_id/{dev_id}/has-meta/{field}", tags=["Metadata"])
     def get_has_meta(dev_id: str, field: str):
         """Returns true if given **{field}** exists as metadata field for device with **{field}** , and it is not equal to string "null".
         """
         check_device_existence(dev_id)
         return has_meta(field, db=dev_id)
+
+    @app.get("/dev_id/{dev_id}/set-meta/{field}/", tags=["Metadata"])
+    @app.get("/dev_id/{dev_id}/set-meta/{field}/{value}", tags=["Metadata"])
+    def set_meta(dev_id: str, field: str, value: str = None):
+        """Set meta field. If field exist it is getting update.
+        """
+        check_device_existence(dev_id)
+        set_meta_field(field, value, db=dev_id)
 
     return app

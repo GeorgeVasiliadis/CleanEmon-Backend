@@ -14,6 +14,7 @@ from CleanEmonCore.models import EnergyData
 from .. import RES_DIR
 from ..lib.DBConnector import fetch_data
 from ..lib.DBConnector import adapter
+from ..lib.DBConnector import send_meta
 from ..lib.plots import plot_data
 
 
@@ -169,3 +170,7 @@ def has_meta(field: str, db: str = None) -> bool:
 
     value = meta[field]
     return value != "null"
+
+
+def set_meta_field(field: str, meta: str, db: str):
+    return send_meta(field, meta, db=db)

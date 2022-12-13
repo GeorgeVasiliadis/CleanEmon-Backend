@@ -16,7 +16,7 @@ def fetch_data(date_id: str, *, from_cache=False, db: str = None) -> EnergyData:
     if not os.path.exists(CACHE_DIR):
         os.mkdir(CACHE_DIR)
 
-    name = date_id+db
+    name = date_id + db
 
     cache_path = os.path.join(CACHE_DIR, name)
 
@@ -46,3 +46,7 @@ def fetch_data(date_id: str, *, from_cache=False, db: str = None) -> EnergyData:
 
 def send_data(date_id: str, data: EnergyData, db: str = None):
     return adapter.update_energy_data_by_date(date_id, data, db=db)
+
+
+def send_meta(field: str, meta: str, db: str = None):
+    adapter.update_meta(field, value=meta, db=db)
