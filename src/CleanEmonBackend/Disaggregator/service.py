@@ -29,15 +29,18 @@ def update(yesterday: str):
 
 
 def run():
-    class Updater(Observer):
-        def on_notify(self, *args, **kwargs):
-            if "date" in kwargs:
-                yesterday = kwargs["date"]
-            else:  # By default, get the previous date
-                yesterday = date.today() - timedelta(days=1)
-            update(str(yesterday))
+    yesterday = date.today() - timedelta(days=1)
+    update(str(yesterday))
 
-    event = DateChange(3, initial_date=date.today())  # todo: increase interval to reduce execution time?
-    Updater(event)
-
-    event.run()
+    # class Updater(Observer):
+    #     def on_notify(self, *args, **kwargs):
+    #         if "date" in kwargs:
+    #             yesterday = kwargs["date"]
+    #         else:  # By default, get the previous date
+    #             yesterday = date.today() - timedelta(days=1)
+    #         update(str(yesterday))
+    #
+    # event = DateChange(3, initial_date=date.today())  # todo: increase interval to reduce execution time?
+    # Updater(event)
+    #
+    # event.run()
