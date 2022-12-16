@@ -68,4 +68,8 @@ def disaggregate(df: pd.DataFrame, timestamp_label: str = "timestamp", target_la
     # Clear rows that originally had NaN as target value, but keep timestamps
     df.loc[df[target_label].isna(), df.columns != timestamp_label] = np.NaN
 
+    print("FOOO")
+    print(df)
+
+
     return df
