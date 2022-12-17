@@ -21,6 +21,8 @@ def update(yesterday: str):
     # https://stackoverflow.com/questions/15143837/how-to-multi-thread-an-operation-within-a-loop-in-python
     for _ in devices.get_devices():  # For every registered device do the disaggregation.
         energy_data = fetch_data(yesterday, db=_)
+        if len(energy_data.energy_data) == 0:  # If no data is available for this device skip it completely
+            continue
         df = energy_data_to_dataframe(energy_data)
 
         df = disaggregate(df)
