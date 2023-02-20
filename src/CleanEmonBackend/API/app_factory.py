@@ -115,13 +115,27 @@ def create_app():
             sensors = sensors.split(',')
 
         return get_data(parsed_date, from_cache, sensors, db=dev_id)
+    #a)
+    @app.get("/dev_id/{dev_id}/json/last_value", tags=["Views"])
+    def get_json_last_value(dev_id: str = None, sensors: Optional[str] = None):
+        """Returns the last value from today for the device with **{dev_id}**.
+        - **{dev_id}**: The dev_id of the device.
+        - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
+        list will be returned
+        """
+        check_device_existence(dev_id)
+        parsed_date = parse_date("today")
+
+        if sensors:
+            sensors = sensors.split(',')
+
+        return get_data(parsed_date, False, sensors, db=dev_id, keep_last_only=True)
 
     @app.get("/dev_id/{dev_id}/json/range/{from_date}/{to_date}", tags=["Views"])
     def get_json_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,
                        sensors: Optional[str] = None):
         """Returns the range data for the supplied range, from **{from_date}** to **{to_date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
-        - **{from_date}**: A date in YYYY-MM-DD format
         - **to_date**: A date in YYYY-MM-DD format. It should be chronologically greater or equal to **{from_date}**
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database.
@@ -183,6 +197,19 @@ def create_app():
         """
         check_device_existence(dev_id)
         parsed_date = parse_date(date)
+
+        return get_date_consumption(parsed_date, from_cache, simplify, db=dev_id)
+    #b)
+    @app.get("/dev_id/{dev_id}/json/yesterday/consumption", tags=["Views"])
+    def get_json_yesterday_consumption(dev_id: str = None, from_cache: bool = False, simplify: bool = False):
+        """Returns the power consumption of yesterday.
+        - **{dev_id}**: The dev_id of the device.
+        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
+        data will be looked up in cache and then, if they are not found, fetched from the central database
+        - **simplify**: If set to True, only the pure numerical value will be returned
+        """
+        check_device_existence(dev_id)
+        parsed_date = parse_date("yesterday")
 
         return get_date_consumption(parsed_date, from_cache, simplify, db=dev_id)
 

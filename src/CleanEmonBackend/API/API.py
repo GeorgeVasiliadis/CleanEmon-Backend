@@ -18,7 +18,7 @@ from ..lib.DBConnector import send_meta
 from ..lib.plots import plot_data
 
 
-def get_data(date: str, from_cache: bool, sensors: List[str] = None, db: str = None) -> EnergyData:
+def get_data(date: str, from_cache: bool, sensors: List[str] = None, db: str = None, keep_last_only : bool = False) -> EnergyData:
     """Fetches and prepares the daily data that will be returned, filtering in the provided `sensors`.
     Note that there is no need to explicitly specify the "timestamp sensor", as it will always be included.
 
@@ -40,7 +40,8 @@ def get_data(date: str, from_cache: bool, sensors: List[str] = None, db: str = N
         data = filtered_data
     else:
         data = raw_data
-
+    if keep_last_only:
+        data=data[-1:] # remove all items except the last one
     return EnergyData(date, data)
 
 
