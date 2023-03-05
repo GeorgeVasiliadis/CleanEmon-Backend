@@ -272,7 +272,7 @@ def create_app():
 
         days = [datetime.date.today() - datetime.timedelta(days=i) for i in range(29, -1, -1)]  # last 30 days
         consumptions = [get_date_consumption(_.strftime('%Y-%m-%d'), from_cache, True, db=dev_id) for _ in days]
-        # If missing date exist get the window smaller
+        # If missing date exist make the window smaller
         window_start_pos = 0
         window_end_pos = len(consumptions) - 1
 
