@@ -260,8 +260,8 @@ def create_app():
                 "number_of_days_that_energy_data_dont_exist": number_of_empty_days if missing_data else ""
                 }
 
-    @app.get("/dev_id/{dev_id}/json/days/average_consumption", tags=["Views"])
-    def get_json_days_average_consumption(dev_id: str = None, from_cache: bool = False, simplify: bool = False):
+    @app.get("/dev_id/{dev_id}/json/30days/average_consumption", tags=["Views"])
+    def get_json_30days_average_consumption(dev_id: str = None, from_cache: bool = False, simplify: bool = False):
         """Returns the average daily consumption in the last 30 days.
         - **{dev_id}**: The dev_id of the device.
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
@@ -299,9 +299,19 @@ def create_app():
                 "window_end_day": days[window_end_pos].strftime('%Y-%m-%d'),
                 "window_size": window_end_pos - window_start_pos,
                 "missing_data_within_window": missing_data_within_the_window,
-                "start" : window_start_pos,
-                "end" : window_end_pos
+                "start": window_start_pos,
+                "end": window_end_pos
                 }
+
+    @app.get("/dev_id/{dev_id}/json/30days/average_consumption_div_home_size", tags=["Views"])
+    def get_json_30days_average_consumption_div_home_size(dev_id: str = None, from_cache: bool = False):
+        """Returns the average daily consumption in the last 30 days divided by the size of the home
+        - **{dev_id}**: The dev_id of the device.
+        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
+        data will be looked up in cache and then, if they are not found, fetched from the central database
+        """
+
+        return get_json_30days_average_consumption(dev_id, from_cache, simplify=True) / get_meta("size",dev_id)
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
     def get_json_date_mean_consumption(dev_id: str = None, date: str = None, from_cache: bool = False):
