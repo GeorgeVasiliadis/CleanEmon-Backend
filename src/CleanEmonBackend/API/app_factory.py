@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 
 from ..Devices.devices import Devices
+from ..lib.exceptions import MissingEnergyData
 
 devices = Devices()
 
@@ -98,6 +99,15 @@ def create_app():
 
         )
 
+    @app.exception_handler(MissingEnergyData)
+    def missing_energy_data_handler(request: Request, exception: MissingEnergyData):
+        return JSONResponse(
+            status_code=400,
+            content={"message": f"Can't find enough Energy Data to do the calculations."
+                                f" Make sure the device is turn on, configured correctly and is recording data"}
+
+        )
+
     @app.get("/dev_id/{dev_id}/json/date/{date}", tags=["Views"])
     def get_json_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
         """Returns the daily data the supplied **{date}** for the device with **{dev_id}**.
@@ -115,7 +125,8 @@ def create_app():
             sensors = sensors.split(',')
 
         return get_data(parsed_date, from_cache, sensors, db=dev_id)
-    #a)
+
+    # a)
     @app.get("/dev_id/{dev_id}/json/last_value", tags=["Views"])
     def get_json_last_value(dev_id: str = None, sensors: Optional[str] = None):
         """Returns the last value from today for the device with **{dev_id}**.
@@ -199,7 +210,8 @@ def create_app():
         parsed_date = parse_date(date)
 
         return get_date_consumption(parsed_date, from_cache, simplify, db=dev_id)
-    #b)
+
+    # b)
     @app.get("/dev_id/{dev_id}/json/yesterday/consumption", tags=["Views"])
     def get_json_yesterday_consumption(dev_id: str = None, from_cache: bool = False, simplify: bool = False):
         """Returns the power consumption of yesterday.
@@ -213,25 +225,83 @@ def create_app():
 
         return get_date_consumption(parsed_date, from_cache, simplify, db=dev_id)
 
-
+    # g
     @app.get("/dev_id/{dev_id}/json/last_month/consumption", tags=["Views"])
     def get_json_last_month_consumption(dev_id: str = None, from_cache: bool = False, simplify: bool = False):
-        """Returns the power consumption of from the first day until the last day of last month.
+        """Returns the power consumption from the first day until the last day of last month.
         - **{dev_id}**: The dev_id of the device.
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database
         - **simplify**: If set to True, only the pure numerical value will be returned
         """
         check_device_existence(dev_id)
-        days= get_last_month_days()
+
+        days = get_last_month_days()
         consumptions = [get_date_consumption(_.strftime('%Y-%m-%d'), from_cache, True, db=dev_id) for _ in days]
+        number_of_empty_days = consumptions.count(0)
+        missing_data = True if number_of_empty_days != 0 else False
+
+        if missing_data:
+            number_of_non_empty_days = len(consumptions) - number_of_empty_days
+            if number_of_non_empty_days == 0:
+                result = 0
+            else:
+                result = (sum(consumptions) / number_of_non_empty_days) * len(consumptions)  # Trying to estimate
+        else:
+            result = sum(consumptions)
+
         if simplify:
-            return sum(consumptions)
-        return {"consumption": sum(consumptions),
+            return result
+        return {"consumption": result,
                 "unit": "kwh",
-                "month" : days[0].strftime('%B'),
-                "missing_data" : True if 0 in consumptions else False
-        }
+                "month": days[0].strftime('%B'),
+                "missing_data": missing_data,
+                "number_of_days_that_energy_data_exist": number_of_non_empty_days,
+                "number_of_days_that_energy_data_dont_exist": number_of_empty_days if missing_data else ""
+                }
+
+    @app.get("/dev_id/{dev_id}/json/days/average_consumption", tags=["Views"])
+    def get_json_days_average_consumption(dev_id: str = None, from_cache: bool = False, simplify: bool = False):
+        """Returns the average daily consumption in the last 30 days.
+        - **{dev_id}**: The dev_id of the device.
+        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
+        data will be looked up in cache and then, if they are not found, fetched from the central database
+        - **simplify**: If set to True, only the pure numerical value will be returned
+        """
+        check_device_existence(dev_id)
+
+        days = [datetime.date.today() - datetime.timedelta(days=i) for i in range(29, -1, -1)]  # last 30 days
+        consumptions = [get_date_consumption(_.strftime('%Y-%m-%d'), from_cache, True, db=dev_id) for _ in days]
+        # If missing date exist get the window smaller
+        window_start_pos = 0
+        window_end_pos = len(consumptions) - 1
+
+        while consumptions[window_end_pos] == 0 and window_end_pos - window_start_pos > 3:
+            window_end_pos -= 1
+
+        while consumptions[window_start_pos] == 0 and window_end_pos - window_start_pos > 3:
+            window_start_pos += 1
+
+        if window_end_pos - window_start_pos <= 3:
+            raise MissingEnergyData("")
+
+        missing_data_within_the_window = False if consumptions[window_start_pos:window_end_pos + 1].count(
+            0) == 0 else True
+
+        result = sum(consumptions[window_start_pos:window_end_pos + 1]) / len(
+            consumptions[window_start_pos:window_end_pos + 1])
+
+        if simplify:
+            return result
+        return {"consumption": result,
+                "unit": "kwh",
+                "window_start_day": days[window_start_pos].strftime('%Y-%m-%d'),
+                "window_end_day": days[window_end_pos].strftime('%Y-%m-%d'),
+                "window_size": window_end_pos - window_start_pos,
+                "missing_data_within_window": missing_data_within_the_window,
+                "start" : window_start_pos,
+                "end" : window_end_pos
+                }
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
     def get_json_date_mean_consumption(dev_id: str = None, date: str = None, from_cache: bool = False):
@@ -274,11 +344,11 @@ def create_app():
 
     return app
 
+
 def get_last_month_days():
-    end_last_month = datetime.date.today().replace(day=1) - datetime.timedelta(days=1)  # last day of last month
+    end_last_month = datetime.date.today().replace(day=1) - datetime.timedelta(days=1)
     start_last_month = end_last_month.replace(day=1)  # first day of the last month
     delta = end_last_month - start_last_month
 
     days = [start_last_month + datetime.timedelta(days=i) for i in range(delta.days + 1)]
     return days
-

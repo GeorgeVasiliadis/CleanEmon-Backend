@@ -12,3 +12,8 @@ class BadDateRangeError(ValueError):
 class BadDeviceNonExistent(ValueError):
     def __init__(self, bad_device_non_existent: str):
         self.bad_device_non_existent = bad_device_non_existent
+
+
+class MissingEnergyData(ValueError):
+    def __init__(self, missing_energy_data: str):
+        self.missing_energy_data = missing_energy_data
