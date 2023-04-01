@@ -17,3 +17,8 @@ class BadDeviceNonExistent(ValueError):
 class MissingEnergyData(ValueError):
     def __init__(self, missing_energy_data: str):
         self.missing_energy_data = missing_energy_data
+
+
+class MissingMetadataField(ValueError):
+    def __init__(self, field_name: str):
+        self.field_name = field_name

@@ -29,6 +29,7 @@ def create_app():
     from ..lib.exceptions import BadDateError
     from ..lib.exceptions import BadDateRangeError
     from ..lib.exceptions import BadDeviceNonExistent
+    from ..lib.exceptions import MissingMetadataField
 
     from ..lib.validation import is_valid_date
     from ..lib.validation import is_valid_date_range
@@ -106,6 +107,15 @@ def create_app():
             content={"message": f"Can't find enough Energy Data to do the calculations."
                                 f" Make sure the device is turn on, configured correctly and is recording data"}
 
+        )
+
+    @app.exception_handler(MissingMetadataField)
+    def missing_metadata_field_handler(request: Request, exception: MissingMetadataField):
+        return JSONResponse(
+            status_code=400,
+            content={"message": f"Can't find the field '{exception.field_name}' for this device."
+                                f" Please ensure that the field '{exception.field_name} ' has been specified in the "
+                                f"metadata for this device."}
         )
 
     @app.get("/dev_id/{dev_id}/json/date/{date}", tags=["Views"])
@@ -241,8 +251,8 @@ def create_app():
         number_of_empty_days = consumptions.count(0)
         missing_data = True if number_of_empty_days != 0 else False
 
+        number_of_non_empty_days = len(consumptions) - number_of_empty_days
         if missing_data:
-            number_of_non_empty_days = len(consumptions) - number_of_empty_days
             if number_of_non_empty_days == 0:
                 result = 0
             else:
@@ -311,7 +321,11 @@ def create_app():
         data will be looked up in cache and then, if they are not found, fetched from the central database
         """
 
-        return get_json_30days_average_consumption(dev_id, from_cache, simplify=True) / get_meta("size",dev_id)
+        if has_meta("size", dev_id):
+            home_size = float(has_meta("size", dev_id))
+        else:
+            raise MissingMetadataField('size')
+        return get_json_30days_average_consumption(dev_id, from_cache, simplify=True) / home_size
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
     def get_json_date_mean_consumption(dev_id: str = None, date: str = None, from_cache: bool = False):
