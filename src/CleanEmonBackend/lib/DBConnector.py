@@ -2,6 +2,8 @@
 
 import os
 import json
+import compress_json
+
 
 from CleanEmonCore import CONFIG_FILE
 from CleanEmonCore.models import EnergyData
@@ -18,17 +20,15 @@ def fetch_data(date_id: str, *, from_cache=False, db: str = None) -> EnergyData:
 
     name = date_id + db
 
-    cache_path = os.path.join(CACHE_DIR, name)
+    cache_path = os.path.join(CACHE_DIR, name + '.gz')
 
     fetch_ok = False
     energy_data = EnergyData()
 
     if from_cache:
         try:
-            with open(cache_path, "r") as fin:
-                raw_data = json.load(fin)
-                energy_data = EnergyData(raw_data["date"], raw_data["energy_data"])
-
+            raw_data = compress_json.load(cache_path)
+            energy_data = EnergyData(raw_data["date"], raw_data["energy_data"])
             print("Fetched data from cache")
             fetch_ok = True
         except OSError:
@@ -38,8 +38,7 @@ def fetch_data(date_id: str, *, from_cache=False, db: str = None) -> EnergyData:
         energy_data = adapter.fetch_energy_data_by_date(date_id, db=db)
 
         # Cache data for future use
-        with open(cache_path, "w") as fout:
-            json.dump(energy_data.as_json(string=False), fout)
+        compress_json.dump(energy_data.as_json(string=False), cache_path)
 
     return energy_data
 
