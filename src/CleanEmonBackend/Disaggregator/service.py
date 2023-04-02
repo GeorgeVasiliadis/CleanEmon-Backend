@@ -1,4 +1,5 @@
-from datetime import date, time
+from datetime import date
+import time
 from datetime import timedelta
 
 from CleanEmonCore.Events import Observer
@@ -19,7 +20,11 @@ devices = Devices()
 def update(yesterday: str):
     # TODO : Maybe add multiprocessing with threads to speed up. Check this:
     # https://stackoverflow.com/questions/15143837/how-to-multi-thread-an-operation-within-a-loop-in-python
-    time.sleep(60 * 7) # wait for 7 minutes before starting
+    time.sleep(60 * 10)  # wait for 10 minutes before starting the disaggregation process.
+    # The disaggregation process begins precisely at 00:00. However, since each device sends a burst of sensor values
+    # every 5 minutes, it's possible for the disaggregation process to start before all the data for the day has been
+    # saved to the database.
+
     for _ in devices.get_devices():  # For every registered device do the disaggregation.
         energy_data = fetch_data(yesterday, db=_)
         if len(energy_data.energy_data) == 0:  # If no data is available for this device skip it completely
