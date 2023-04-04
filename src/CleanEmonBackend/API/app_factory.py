@@ -5,6 +5,8 @@ from typing import Optional
 
 from fastapi import FastAPI
 from fastapi import Request
+from fastapi import Response
+import orjson
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 
@@ -49,7 +51,8 @@ def create_app():
         }
     ]
 
-    app = FastAPI(openapi_tags=meta_tags, swagger_ui_parameters={"defaultModelsExpandDepth": -1})
+    app = FastAPI(openapi_tags=meta_tags, swagger_ui_parameters={"defaultModelsExpandDepth": -1,
+                                                                 "syntaxHighlight": False})
 
     def parse_date(date: str) -> str:
         """Simple date parser. A date can either be in a standard YYYY-MM-DD format or a predefined alias.
@@ -119,7 +122,7 @@ def create_app():
         )
 
     @app.get("/dev_id/{dev_id}/json/date/{date}", tags=["Views"])
-    def get_json_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
+    async def get_json_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None) -> Response:
         """Returns the daily data the supplied **{date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
@@ -134,7 +137,14 @@ def create_app():
         if sensors:
             sensors = sensors.split(',')
 
-        return get_data(parsed_date, from_cache, sensors, db=dev_id)
+        return Response(
+            content=orjson.dumps(get_data(parsed_date, from_cache, sensors, db=dev_id)),
+            media_type="application/json"
+        )
+
+        # return get_data(parsed_date, from_cache, sensors, db=dev_id)
+
+        # return get_data(parsed_date, from_cache, sensors, db=dev_id)
 
     # a)
     @app.get("/dev_id/{dev_id}/json/last_value", tags=["Views"])
@@ -170,7 +180,11 @@ def create_app():
         if sensors:
             sensors = sensors.split(',')
 
-        return get_range_data(from_date, to_date, from_cache, sensors, db=dev_id)
+        return Response(
+            content=orjson.dumps(get_range_data(from_date, to_date, from_cache, sensors, db=dev_id)),
+            media_type="application/json"
+        )
+        #return get_range_data(from_date, to_date, from_cache, sensors, db=dev_id)
 
     @app.get("/devices", tags=["Views"])
     def get_devices():
@@ -320,12 +334,11 @@ def create_app():
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database
         """
-
         if has_meta("size", dev_id):
-            home_size = float(has_meta("size", dev_id))
+            home_size = float(get_meta("size", dev_id))
         else:
             raise MissingMetadataField('size')
-        return get_json_30days_average_consumption(dev_id, from_cache, simplify=True) / home_size
+        return float(get_json_30days_average_consumption(dev_id, from_cache, simplify=True)) / home_size
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
     def get_json_date_mean_consumption(dev_id: str = None, date: str = None, from_cache: bool = False):
@@ -337,8 +350,10 @@ def create_app():
         """
         check_device_existence(dev_id)
         parsed_date = parse_date(date)
-
-        return get_mean_consumption(parsed_date, from_cache, db=dev_id)
+        res = get_mean_consumption(parsed_date, from_cache, db=dev_id)
+        if res == -1:
+            raise MissingMetadataField('size')
+        return res
 
     @app.get("/dev_id/{dev_id}/meta/", tags=["Metadata"])
     @app.get("/dev_id/{dev_id}/meta/{field}", tags=["Metadata"])
@@ -376,3 +391,5 @@ def get_last_month_days():
 
     days = [start_last_month + datetime.timedelta(days=i) for i in range(delta.days + 1)]
     return days
+
+

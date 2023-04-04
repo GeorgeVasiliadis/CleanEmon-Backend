@@ -146,8 +146,8 @@ def get_mean_consumption(date: str, from_cache: bool, db: str = None) -> float:
 
     consumption: float = get_date_consumption(date, from_cache, simplify=True, db=db)
 
-    if has_meta(_size_field):
-        size = float(get_meta(_size_field))
+    if has_meta("size", db):
+        size = float(get_meta(_size_field, db))
         if size:
             return consumption / size
     return -1
