@@ -142,11 +142,11 @@ def get_mean_consumption(date: str, from_cache: bool, db: str = None) -> float:
     date -- a valid date string in `YYYY-MM-DD` format
     from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
     """
-    _size_field = "size"  # Hardcoded field - get_meta is not intended to be used in this way
+    _size_field = "Household m2"  # Hardcoded field - get_meta is not intended to be used in this way
 
     consumption: float = get_date_consumption(date, from_cache, simplify=True, db=db)
 
-    if has_meta("size", db):
+    if has_meta(_size_field, db):
         size = float(get_meta(_size_field, db))
         if size:
             return consumption / size

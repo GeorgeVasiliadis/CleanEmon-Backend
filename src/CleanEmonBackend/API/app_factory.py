@@ -334,10 +334,10 @@ def create_app():
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database
         """
-        if has_meta("size", dev_id):
-            home_size = float(get_meta("size", dev_id))
+        if has_meta("Household m2", dev_id):
+            home_size = float(get_meta("Household m2", dev_id))
         else:
-            raise MissingMetadataField('size')
+            raise MissingMetadataField('Household m2')
         return float(get_json_30days_average_consumption(dev_id, from_cache, simplify=True)) / home_size
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
@@ -352,7 +352,7 @@ def create_app():
         parsed_date = parse_date(date)
         res = get_mean_consumption(parsed_date, from_cache, db=dev_id)
         if res == -1:
-            raise MissingMetadataField('size')
+            raise MissingMetadataField('Household m2')
         return res
 
     @app.get("/dev_id/{dev_id}/meta/", tags=["Metadata"])
