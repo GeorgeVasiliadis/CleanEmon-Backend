@@ -32,6 +32,8 @@ def create_app():
     from ..lib.exceptions import BadDateRangeError
     from ..lib.exceptions import BadDeviceNonExistent
     from ..lib.exceptions import MissingMetadataField
+    from ..lib.exceptions import SchemaValidationForMetaFailed
+
 
     from ..lib.validation import is_valid_date
     from ..lib.validation import is_valid_date_range
@@ -119,6 +121,12 @@ def create_app():
             content={"message": f"Can't find the field '{exception.field_name}' for this device."
                                 f" Please ensure that the field '{exception.field_name} ' has been specified in the "
                                 f"metadata for this device."}
+        )
+    @app.exception_handler(SchemaValidationForMetaFailed)
+    def schema_validation_for_meta_failed_handler(request: Request, exception: SchemaValidationForMetaFailed):
+        return JSONResponse(
+            status_code=400,
+            content={"message": f"Can't change meta field because : {exception.message}"}
         )
 
     @app.get("/dev_id/{dev_id}/json/date/{date}", tags=["Views"])
@@ -373,13 +381,19 @@ def create_app():
         check_device_existence(dev_id)
         return has_meta(field, db=dev_id)
 
-    @app.get("/dev_id/{dev_id}/set-meta/{field}/", tags=["Metadata"])
+    # @app.get("/dev_id/{dev_id}/set-meta/{field}/", tags=["Metadata"])
     @app.get("/dev_id/{dev_id}/set-meta/{field}/{value}", tags=["Metadata"])
-    def set_meta(dev_id: str, field: str, value: str = None):
+    def set_meta(dev_id: str, field: str, value: bool | int | float | str | None = None):
         """Set meta field. If field exist it is getting update.
         """
         check_device_existence(dev_id)
-        set_meta_field(field, value, db=dev_id)
+
+        import jsonschema
+        try:
+            set_meta_field(field, value, db=dev_id)
+            return "OK"
+        except jsonschema.exceptions.ValidationError as e:
+            raise SchemaValidationForMetaFailed(e.message)
 
     return app
 
