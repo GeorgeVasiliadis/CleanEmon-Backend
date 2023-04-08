@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date
 from datetime import timedelta
 
 from CleanEmonCore.Events import Observer
@@ -19,7 +19,6 @@ devices = Devices()
 def update(yesterday: str):
     # TODO : Maybe add multiprocessing with threads to speed up. Check this:
     # https://stackoverflow.com/questions/15143837/how-to-multi-thread-an-operation-within-a-loop-in-python
-    time.sleep(60 * 7) # wait for 7 minutes before starting
     for _ in devices.get_devices():  # For every registered device do the disaggregation.
         energy_data = fetch_data(yesterday, db=_)
         if len(energy_data.energy_data) == 0:  # If no data is available for this device skip it completely
@@ -40,7 +39,7 @@ def run():
                 yesterday = date.today() - timedelta(days=1)
             update(str(yesterday))
 
-    event = DateChange(3, initial_date=date.today())  # todo: increase interval to reduce execution time?
+    event = DateChange(60 * 5, initial_date=date.today())  # increase interval to reduce execution time to 5 minutes
     Updater(event)
 
     event.run()
