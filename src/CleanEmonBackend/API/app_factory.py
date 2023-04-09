@@ -1,7 +1,7 @@
 """This defines the FastAPI boostrap function"""
 
 import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import FastAPI
 from fastapi import Request
@@ -383,7 +383,7 @@ def create_app():
 
     # @app.get("/dev_id/{dev_id}/set-meta/{field}/", tags=["Metadata"])
     @app.get("/dev_id/{dev_id}/set-meta/{field}/{value}", tags=["Metadata"])
-    def set_meta(dev_id: str, field: str, value: bool | int | float | str | None = None):
+    def set_meta(dev_id: str, field: str, value: Union[bool, int, float, str, None] = None):
         """Set meta field. If field exist it is getting update.
         """
         check_device_existence(dev_id)

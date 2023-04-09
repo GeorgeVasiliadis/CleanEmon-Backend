@@ -1,13 +1,12 @@
 """This module contains a set of utilities used to transform and prepare data for torch-nilm inference"""
 
 import os
-import json
+from typing import Union
+
 import compress_json
-
-
 from CleanEmonCore import CONFIG_FILE
-from CleanEmonCore.models import EnergyData
 from CleanEmonCore.CouchDBAdapter import CouchDBAdapter
+from CleanEmonCore.models import EnergyData
 
 from .. import CACHE_DIR
 
@@ -47,5 +46,5 @@ def send_data(date_id: str, data: EnergyData, db: str = None):
     return adapter.update_energy_data_by_date(date_id, data, db=db)
 
 
-def send_meta(field: str, meta: bool | int | float | str, db: str = None):
+def send_meta(field: str, meta: Union[bool, int, float, str], db: str = None):
     adapter.update_meta(field, value=meta, db=db)
