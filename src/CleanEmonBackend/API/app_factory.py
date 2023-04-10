@@ -34,7 +34,6 @@ def create_app():
     from ..lib.exceptions import MissingMetadataField
     from ..lib.exceptions import SchemaValidationForMetaFailed
 
-
     from ..lib.validation import is_valid_date
     from ..lib.validation import is_valid_date_range
 
@@ -122,6 +121,7 @@ def create_app():
                                 f" Please ensure that the field '{exception.field_name} ' has been specified in the "
                                 f"metadata for this device."}
         )
+
     @app.exception_handler(SchemaValidationForMetaFailed)
     def schema_validation_for_meta_failed_handler(request: Request, exception: SchemaValidationForMetaFailed):
         return JSONResponse(
@@ -130,7 +130,8 @@ def create_app():
         )
 
     @app.get("/dev_id/{dev_id}/json/date/{date}", tags=["Views"])
-    async def get_json_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None) -> Response:
+    def get_json_date(dev_id: str = None, date: str = None, from_cache: bool = False,
+                      sensors: Optional[str] = None) -> Response:
         """Returns the daily data the supplied **{date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
@@ -192,7 +193,7 @@ def create_app():
             content=orjson.dumps(get_range_data(from_date, to_date, from_cache, sensors, db=dev_id)),
             media_type="application/json"
         )
-        #return get_range_data(from_date, to_date, from_cache, sensors, db=dev_id)
+        # return get_range_data(from_date, to_date, from_cache, sensors, db=dev_id)
 
     @app.get("/devices", tags=["Views"])
     def get_devices():
@@ -405,5 +406,3 @@ def get_last_month_days():
 
     days = [start_last_month + datetime.timedelta(days=i) for i in range(delta.days + 1)]
     return days
-
-
