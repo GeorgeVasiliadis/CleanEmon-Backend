@@ -41,24 +41,48 @@ def plot_data(energy_data: EnergyData, *, columns: List[str] = None, name="plot"
     else:
         time = df.index
 
-    for col, data in df.iteritems():
+    fig: plt.figure
+    ax1: plt.subplot
+    ax2: plt.subplot
+    fig, (ax1, ax2) = plt.subplots(nrows=2, sharex=True, subplot_kw=dict(frameon=False))  # frameon=False removes frames
+    ax1.grid()
+    ax2.grid()
+    for col, data in df.items():
+        # Skip any timestamp-like label
+        if "timestamp" in str(col).lower():
+            continue
+        # Filter only selected columns
+        if col == 'power':
+            mask = np.isfinite(data)
+            ax1.plot(time[mask], data[mask], label=col)
+
+    for col, data in df.items():
         # Skip any timestamp-like label
         if "timestamp" in str(col).lower():
             continue
         # Filter only selected columns
         if (columns and str(col).lower() in columns) or (not columns):
             mask = np.isfinite(data)
-            plt.plot(time[mask], data[mask], label=col)
-    skip = len(time) // 15
+            ax2.plot(time[mask], data[mask], label=col)
+    skip = len(time) // 12
 
-    plt.subplots_adjust(bottom=0.25)
     plt.xticks(time[0:-1:skip], time[0:-1:skip].map(timestamp_to_label), rotation=90, fontsize=8)
-    plt.legend()
-    plt.title(energy_data.date)
+    # plt.legend()
+    fig.suptitle(energy_data.date)
     plt.xlabel("Time")
+    #ax1.set_title("Power")
+    lines_labels = [ax2.get_legend_handles_labels()]  # [ax.get_legend_handles_labels() for ax in fig.axes]
+    lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
+    fig.legend(lines, labels, loc=7, fontsize="x-small")
+    fig.tight_layout()
+    fig.subplots_adjust(right=0.76)
+
     fout_name = os.path.join(PLOT_DIR, f"{name}.png")
     plt.savefig(fout_name, dpi=1000)
     plt.cla()
     plt.clf()
     return fout_name
 
+
+def plot_data2(energy_data: EnergyData, *, columns: List[str] = None, name="plot"):
+    pass
