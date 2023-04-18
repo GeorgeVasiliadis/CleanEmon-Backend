@@ -4,14 +4,14 @@ from datetime import timedelta
 from CleanEmonCore.Events import Observer
 from CleanEmonCore.Events.builtins import DateChange
 
-from ..lib.DBConnector import fetch_data
-from ..lib.DBConnector import send_data
+from CleanEmonBackend.lib.DBConnector import fetch_data
+from CleanEmonBackend.lib.DBConnector import send_data
 
-from ..Disaggregator import energy_data_to_dataframe
-from ..Disaggregator import dataframe_to_energy_data
-from ..Disaggregator import disaggregate
+from CleanEmonBackend.Disaggregator import energy_data_to_dataframe
+from CleanEmonBackend.Disaggregator import dataframe_to_energy_data
+from CleanEmonBackend.Disaggregator import disaggregate
 
-from ..Devices.devices import Devices
+from CleanEmonBackend.Devices.devices import Devices
 
 devices = Devices()
 
@@ -23,9 +23,11 @@ def update(yesterday: str):
         energy_data = fetch_data(yesterday, db=_)
         if len(energy_data.energy_data) == 0:  # If no data is available for this device skip it completely
             continue
+        print("run for device", _)
         df = energy_data_to_dataframe(energy_data)
-
-        df = disaggregate(df)
+        import CleanEmonBackend.API.API
+        meta = CleanEmonBackend.API.API.get_meta(field=None, db=_)
+        df = disaggregate(df, meta=meta)
         dis_energy_data = dataframe_to_energy_data(df)
         send_data(yesterday, dis_energy_data, db=_)
 

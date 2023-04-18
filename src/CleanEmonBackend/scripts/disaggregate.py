@@ -3,9 +3,6 @@ from CleanEmonCore.CouchDBAdapter import CouchDBAdapter
 
 from CleanEmonBackend.Disaggregator.service import update
 
-adapter = CouchDBAdapter(CONFIG_FILE)
-print(f"You are working on database: {adapter.db}")
-
 
 def _disaggregate(date: str):
     print(f"Working on {date}")
