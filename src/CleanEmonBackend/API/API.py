@@ -12,9 +12,10 @@ from typing import Any
 from CleanEmonCore.models import EnergyData
 
 from .. import RES_DIR
-from ..lib.DBConnector import fetch_data
+from CleanEmonBackend.lib.DBConnector import fetch_data
 from ..lib.DBConnector import adapter
 from ..lib.DBConnector import send_meta
+from ..lib.DBConnector import get_view_daily_consumption
 from ..lib.plots import plot_data
 
 
@@ -103,25 +104,7 @@ def get_date_consumption(date: str, from_cache: bool, simplify: bool, db: str = 
     simplify -- if true, returns a single value, not a JSON object
     """
 
-    data = get_data(date, from_cache, db=db)
-
-    kwh_list = [record["kwh"] for record in data.energy_data]
-
-    # Find the first valid kwh measurement
-    first_valid = 0
-    for kwh in kwh_list:
-        if kwh:
-            first_valid = kwh
-            break
-
-    # Find the last valid kwh measurement
-    last_valid = 0
-    for kwh in reversed(kwh_list):
-        if kwh:
-            last_valid = kwh
-            break
-
-    consumption = last_valid - first_valid
+    consumption = get_view_daily_consumption(date, db)
     if simplify:
         data = consumption
     else:

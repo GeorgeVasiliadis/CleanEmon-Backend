@@ -48,3 +48,7 @@ def send_data(date_id: str, data: EnergyData, db: str = None):
 
 def send_meta(field: str, meta: Union[bool, int, float, str], db: str = None):
     adapter.update_meta(field, value=meta, db=db)
+
+
+def get_view_daily_consumption(date: str, db: str):
+    return adapter.view_daily_consumption(date=date, db=db)
