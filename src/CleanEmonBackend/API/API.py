@@ -16,6 +16,7 @@ from CleanEmonBackend.lib.DBConnector import fetch_data
 from ..lib.DBConnector import adapter
 from ..lib.DBConnector import send_meta
 from ..lib.DBConnector import get_view_daily_consumption
+from ..lib.DBConnector import get_last_value
 from ..lib.plots import plot_data
 
 
@@ -28,6 +29,8 @@ def get_data(date: str, from_cache: bool, sensors: List[str] = None, db: str = N
     sensors -- an inclusive list containing the values of interest
     """
 
+    if keep_last_only:
+        return get_last_value(db)
     raw_data = fetch_data(date, from_cache=from_cache, db=db).energy_data
 
     if sensors:
