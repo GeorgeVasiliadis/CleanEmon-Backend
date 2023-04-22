@@ -77,13 +77,13 @@ def disaggregate(df: pd.DataFrame, timestamp_label: str = "timestamp", target_la
         preds[preds < 0] = 0  # replace all negatives with 0; pred_XXX = max (0,pred_XXX)
         max_pred = preds.max()  # find max
 
-        max_limit = meta["max_limit_" + device.lower().replace(" ", "_")]
-        preds = preds.apply(lambda x: x * max_limit / max_pred)
+        max_scale = meta["max_scale_" + device.lower().replace(" ", "_")]
+        preds = preds.apply(lambda x: x * max_scale / max_pred)
         df[col_name] = preds.values
         appliances_names_to_sum.append(col_name)
 
     sum_ab = df[appliances_names_to_sum].sum(axis=1)
-    df['Noise'] = df['power'] - sum_ab
+    df['noise'] = df['power'] - sum_ab
     # Clear rows that originally had NaN as target value, but keep timestamps
     df.loc[df[target_label].isna(), df.columns != timestamp_label] = np.NaN
 
