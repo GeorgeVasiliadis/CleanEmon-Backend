@@ -9,6 +9,7 @@ from fastapi import Response
 import orjson
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
+from starlette.responses import StreamingResponse
 
 from ..Devices.devices import Devices
 from ..lib.exceptions import MissingEnergyData
@@ -36,6 +37,7 @@ def create_app():
 
     from ..lib.validation import is_valid_date
     from ..lib.validation import is_valid_date_range
+    from fastapi.middleware.cors import CORSMiddleware
 
     meta_tags = [
         {
@@ -54,6 +56,16 @@ def create_app():
 
     app = FastAPI(openapi_tags=meta_tags, swagger_ui_parameters={"defaultModelsExpandDepth": -1,
                                                                  "syntaxHighlight": False})
+
+    origins = ["*"]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     def parse_date(date: str) -> str:
         """Simple date parser. A date can either be in a standard YYYY-MM-DD format or a predefined alias.
@@ -164,12 +176,11 @@ def create_app():
         list will be returned
         """
         check_device_existence(dev_id)
-        parsed_date = parse_date("today")
 
         if sensors:
             sensors = sensors.split(',')
 
-        return get_data(parsed_date, False, sensors, db=dev_id, keep_last_only=True)
+        return get_data(None, False, sensors, db=dev_id, keep_last_only=True)
 
     @app.get("/dev_id/{dev_id}/json/range/{from_date}/{to_date}", tags=["Views"])
     def get_json_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,
@@ -216,9 +227,9 @@ def create_app():
         if sensors:
             sensors = sensors.split(',')
 
-        plot_path = get_plot(parsed_date, from_cache, sensors, db=dev_id)
 
-        return FileResponse(plot_path, media_type="image/jpeg")
+        return StreamingResponse(get_plot(parsed_date, from_cache, sensors, db=dev_id), media_type="image/svg+xml")
+
 
     @app.get("/dev_id/{dev_id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
     def get_plot_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,

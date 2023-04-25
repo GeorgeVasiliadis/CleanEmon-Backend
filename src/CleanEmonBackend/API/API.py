@@ -3,6 +3,7 @@
 import os
 from datetime import datetime
 from datetime import timedelta
+from io import BytesIO
 
 from typing import List
 from typing import Dict
@@ -81,7 +82,7 @@ def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[
     return data
 
 
-def get_plot(date: str, from_cache: bool, sensors: List[str] = None, db: str = None) -> str:
+def get_plot(date: str, from_cache: bool, sensors: List[str] = None, db: str = None) -> BytesIO:
     """Fetches and plots the desired data. Returns the path of the resulting plot.
 
     date -- a valid date string in `YYYY-MM-DD` format
@@ -90,9 +91,8 @@ def get_plot(date: str, from_cache: bool, sensors: List[str] = None, db: str = N
     """
 
     energy_data = get_data(date, from_cache, sensors, db=db)
-    f_out = plot_data(energy_data, columns=sensors)
 
-    return os.path.join(RES_DIR, f_out)
+    return plot_data(energy_data, columns=sensors)
 
 
 def get_date_consumption(date: str, from_cache: bool, simplify: bool, db: str = None):

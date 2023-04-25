@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from io import BytesIO
 
 from typing import List
 
@@ -23,8 +24,30 @@ def timestamp_to_label(stamp):
     return dt.strftime("%H:%M:%S")
 
 
-def plot_data(energy_data: EnergyData, *, columns: List[str] = None, name="plot"):
+def plot_data(energy_data: EnergyData, *, columns: List[str] = None, name="plot") -> BytesIO:
     """Visualization the given dataframe"""
+
+    if len(energy_data.energy_data) == 0:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        txt = ax.text(0.1, 0.85, f'{energy_data.date} no energy data',
+                      horizontalalignment='left',
+                      verticalalignment='center',
+                      transform=ax.transAxes,
+                      fontsize='xx-large')
+        plt.axis('off')
+        txt.set_clip_on(False)  # I added this due to the answer from tcaswell
+
+        buf = BytesIO()
+        plt.savefig(buf, format="svg", dpi=1000)
+        buf.seek(0)
+
+        plt.cla()
+        plt.clf()
+        plt.close(fig)
+
+        return buf
 
     df = pd.DataFrame(energy_data.energy_data)
 
@@ -70,18 +93,22 @@ def plot_data(energy_data: EnergyData, *, columns: List[str] = None, name="plot"
     # plt.legend()
     fig.suptitle(energy_data.date)
     plt.xlabel("Time")
-    #ax1.set_title("Power")
+    # ax1.set_title("Power")
     lines_labels = [ax2.get_legend_handles_labels()]  # [ax.get_legend_handles_labels() for ax in fig.axes]
     lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
     fig.legend(lines, labels, loc=7, fontsize="x-small")
     fig.tight_layout()
     fig.subplots_adjust(right=0.76)
 
-    fout_name = os.path.join(PLOT_DIR, f"{name}.png")
-    plt.savefig(fout_name, dpi=1000)
+    buf = BytesIO()
+    plt.savefig(buf, format="svg", dpi=1000)
+    buf.seek(0)
+
     plt.cla()
     plt.clf()
-    return fout_name
+    plt.close(fig)
+
+    return buf
 
 
 def plot_data2(energy_data: EnergyData, *, columns: List[str] = None, name="plot"):
