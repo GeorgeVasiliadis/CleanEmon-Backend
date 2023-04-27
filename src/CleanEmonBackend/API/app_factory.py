@@ -37,7 +37,6 @@ def create_app():
 
     from ..lib.validation import is_valid_date
     from ..lib.validation import is_valid_date_range
-    from fastapi.middleware.cors import CORSMiddleware
 
     meta_tags = [
         {
@@ -56,16 +55,6 @@ def create_app():
 
     app = FastAPI(openapi_tags=meta_tags, swagger_ui_parameters={"defaultModelsExpandDepth": -1,
                                                                  "syntaxHighlight": False})
-
-    origins = ["*"]
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
 
     def parse_date(date: str) -> str:
         """Simple date parser. A date can either be in a standard YYYY-MM-DD format or a predefined alias.
@@ -213,7 +202,7 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/plot/date/{date}", tags=["Experimental"])
     def get_plot_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
-        """Returns the plot of the specified data, as a JPEG image, for the device with **{dev_id}**.
+        """Returns the plot of the specified data, as a SVG vector image, for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
