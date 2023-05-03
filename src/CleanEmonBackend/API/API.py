@@ -1,27 +1,25 @@
 """This module defines the core functionality of the API"""
 
-import os
+
 from datetime import datetime
 from datetime import timedelta
 from io import BytesIO
-
-from typing import List
-from typing import Dict
-from typing import Union
 from typing import Any
+from typing import Dict
+from typing import List, Optional
+from typing import Union
 
 from CleanEmonCore.models import EnergyData
 
-from .. import RES_DIR
 from CleanEmonBackend.lib.DBConnector import fetch_data
 from ..lib.DBConnector import adapter
-from ..lib.DBConnector import send_meta
-from ..lib.DBConnector import get_view_daily_consumption
 from ..lib.DBConnector import get_last_value
+from ..lib.DBConnector import get_view_daily_consumption
+from ..lib.DBConnector import send_meta
 from ..lib.plots import plot_data
 
 
-def get_data(date: str, from_cache: bool, sensors: List[str] = None, db: str = None, keep_last_only : bool = False) -> EnergyData:
+def get_data(date: Optional[str], from_cache: bool, sensors: List[str] = None, db: str = None, keep_last_only : bool = False) -> EnergyData:
     """Fetches and prepares the daily data that will be returned, filtering in the provided `sensors`.
     Note that there is no need to explicitly specify the "timestamp sensor", as it will always be included.
 

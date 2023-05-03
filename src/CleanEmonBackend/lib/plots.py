@@ -3,7 +3,9 @@ from datetime import datetime
 from io import BytesIO
 
 from typing import List
+import matplotlib
 
+matplotlib.use('svg')
 from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np

@@ -364,7 +364,7 @@ def create_app():
             raise MissingMetadataField('Household m2')
         return res
 
-    @app.get("/dev_id/{dev_id}/meta/", tags=["Metadata"])
+    @app.get("/dev_id/{dev_id}/meta", tags=["Metadata"])
     @app.get("/dev_id/{dev_id}/meta/{field}", tags=["Metadata"])
     def get_json_meta(dev_id: str = None, field: str = None):
         """Returns the metadata for the current house.
