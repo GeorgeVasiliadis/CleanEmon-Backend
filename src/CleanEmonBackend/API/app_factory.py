@@ -3,6 +3,7 @@
 import datetime
 from typing import Optional, Union
 
+import CleanEmonCore.json_utils.schemas
 from fastapi import FastAPI
 from fastapi import Request
 from fastapi import Response
@@ -216,9 +217,7 @@ def create_app():
         if sensors:
             sensors = sensors.split(',')
 
-
         return StreamingResponse(get_plot(parsed_date, from_cache, sensors, db=dev_id), media_type="image/svg+xml")
-
 
     @app.get("/dev_id/{dev_id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
     def get_plot_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,
@@ -395,6 +394,12 @@ def create_app():
             return "OK"
         except jsonschema.exceptions.ValidationError as e:
             raise SchemaValidationForMetaFailed(e.message)
+
+    @app.get("/meta/schema", tags=["Metadata"])
+    def meta_schema():
+        """Returns the meta schema
+        """
+        return CleanEmonCore.json_utils.schemas.schema_meta
 
     return app
 
