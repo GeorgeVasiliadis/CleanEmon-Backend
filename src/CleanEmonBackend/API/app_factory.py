@@ -1,21 +1,100 @@
 """This defines the FastAPI boostrap function"""
 
 import datetime
-from typing import Optional, Union
+from typing import Optional
+from typing import Union
 
 import CleanEmonCore.json_utils.schemas
-from fastapi import FastAPI
-from fastapi import Request
-from fastapi import Response
 import orjson
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Request, Form
+from fastapi import Response
 from fastapi.responses import JSONResponse
-from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from starlette.responses import StreamingResponse
+from typing_extensions import Annotated
 
-from ..Devices.devices import Devices
-from ..lib.exceptions import MissingEnergyData
+from CleanEmonBackend.API.API import fetch_account_info, create_account
+from CleanEmonBackend.Devices.devices import Devices
+from CleanEmonBackend.lib.authenticator_config import SECRET_KEY, ALGORITHM, Token, TokenData, UserInDB, User, \
+    is_couchdb_safe_username
+from CleanEmonBackend.lib.exceptions import MissingEnergyData
 
 devices = Devices()
+
+ACCESS_TOKEN_EXPIRE_WEEKS = 52  # 1 year
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+
+def get_user(fake_db, username: str):
+    if user_exists(fake_db, username):
+        return UserInDB(**fake_db)
+    return None
+
+
+def user_exists(fake_db, username: str):
+    if 'username' in fake_db and fake_db['username'] == username:
+        return True
+    return False
+
+
+def authenticate_user(account_info, username: str, password: str):
+    user = get_user(account_info, username)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
+
+
+def create_access_token(data: dict, expires_delta: datetime.timedelta):
+    to_encode = data.copy()
+    expire = datetime.datetime.utcnow() + expires_delta
+    to_encode.update({"exp": expire})  # Add expiration date to token
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    user = get_user(fetch_account_info(token_data.username), username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+async def get_current_active_user(
+        current_user: Annotated[User, Depends(get_current_user)]
+):
+    if current_user.disabled:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Inactive user, please kindly ask the system admin to activate your account")
+    return current_user
 
 
 def create_app():
@@ -40,6 +119,10 @@ def create_app():
     from ..lib.validation import is_valid_date_range
 
     meta_tags = [
+        {
+            "name": "Authorization",
+            "description": "Authenticate using a bearer token"
+        },
         {
             "name": "Views",
             "description": "Essential views"
@@ -131,8 +214,62 @@ def create_app():
             content={"message": f"Can't change meta field because : {exception.message}"}
         )
 
+    @app.post("/token", response_model=Token, tags=["Authorization"])
+    async def login_for_access_token(username: str = Form(...),
+                                     password: str = Form(...)):
+        username = username.lower()
+        if not (is_couchdb_safe_username(username)):
+            raise HTTPException(
+                status_code=400, detail="The username contains invalid characters. Only lowercase letters, numbers, "
+                                        "and the characters '_', '$', '(', ')', and '/' are allowed."
+            )
+        user = authenticate_user(fetch_account_info(username), username, password)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if user.disabled:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Inactive user, please kindly ask the system admin to activate your account")
+        access_token_expires = datetime.timedelta(weeks=15)
+        access_token = create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires)
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    @app.post("/register", tags=["Authorization"])
+    async def register(username: str = Form(...),
+                       password: str = Form(...)):
+        username = username.lower()
+        if not (is_couchdb_safe_username(username)):
+            raise HTTPException(
+                status_code=400, detail="The username contains invalid characters. Only lowercase letters, numbers, "
+                                        "and the characters '_', '$', '(', ')', and '/' are allowed."
+            )
+        # Check if the username is already taken
+        if user_exists(fetch_account_info(username), username):
+            raise HTTPException(
+                status_code=400, detail="Username already taken"
+            )
+
+        # Hash the password using a secure hash function
+
+        new_user = UserInDB(username=username,
+                            hashed_password=get_password_hash(password),
+                            disabled=True)
+
+        # Create the new user account
+        if create_account(new_user):
+            return {"message": "User created successfully, kindly ask you administrator to activate your account"}
+        else:
+            raise HTTPException(
+                status_code=400, detail="Unknown error"
+            )
+
     @app.get("/dev_id/{dev_id}/json/date/{date}", tags=["Views"])
-    def get_json_date(dev_id: str = None, date: str = None, from_cache: bool = False,
+    def get_json_date(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
+                      date: str = None, from_cache: bool = False,
                       sensors: Optional[str] = None) -> Response:
         """Returns the daily data the supplied **{date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
@@ -159,7 +296,8 @@ def create_app():
 
     # a)
     @app.get("/dev_id/{dev_id}/json/last_value", tags=["Views"])
-    def get_json_last_value(dev_id: str = None, sensors: Optional[str] = None):
+    def get_json_last_value(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
+                            sensors: Optional[str] = None):
         """Returns the last value from today for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
@@ -173,7 +311,8 @@ def create_app():
         return get_data(None, False, sensors, db=dev_id, keep_last_only=True)
 
     @app.get("/dev_id/{dev_id}/json/range/{from_date}/{to_date}", tags=["Views"])
-    def get_json_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,
+    def get_json_range(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, from_date: str,
+                       to_date: str, from_cache: bool = False,
                        sensors: Optional[str] = None):
         """Returns the range data for the supplied range, from **{from_date}** to **{to_date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
@@ -197,13 +336,14 @@ def create_app():
         # return get_range_data(from_date, to_date, from_cache, sensors, db=dev_id)
 
     @app.get("/devices", tags=["Views"])
-    def get_devices():
+    def get_devices(current_user: Annotated[User, Depends(get_current_active_user)]):
         """Returns the list of devices that are registered."""
         return devices.get_devices()
 
     @app.get("/dev_id/{dev_id}/plot/date/{date}", tags=["Experimental"])
-    def get_plot_date(dev_id: str = None, date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
-        """Returns the plot of the specified data, as a SVG vector image, for the device with **{dev_id}**.
+    def get_plot_date(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
+                      date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
+        """Returns the plot of the specified data, as an SVG vector image, for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
@@ -220,7 +360,8 @@ def create_app():
         return StreamingResponse(get_plot(parsed_date, from_cache, sensors, db=dev_id), media_type="image/svg+xml")
 
     @app.get("/dev_id/{dev_id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
-    def get_plot_range(dev_id: str, from_date: str, to_date: str, from_cache: bool = False,
+    def get_plot_range(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, from_date: str,
+                       to_date: str, from_cache: bool = False,
                        sensors: Optional[str] = None):  # TODO Maybe implemented this feature if is necessary.
         """Under construction :)"""
         return JSONResponse(
@@ -229,7 +370,8 @@ def create_app():
         )
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/consumption", tags=["Views"])
-    def get_json_date_consumption(dev_id: str = None, date: str = None, from_cache: bool = False,
+    def get_json_date_consumption(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
+                                  date: str = None, from_cache: bool = False,
                                   simplify: bool = False):
         """Returns the power consumption for the given date.
         - **{dev_id}**: The dev_id of the device.
@@ -245,7 +387,8 @@ def create_app():
 
     # b)
     @app.get("/dev_id/{dev_id}/json/yesterday/consumption", tags=["Views"])
-    def get_json_yesterday_consumption(dev_id: str = None, from_cache: bool = False, simplify: bool = False):
+    def get_json_yesterday_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
+                                       dev_id: str = None, from_cache: bool = False, simplify: bool = False):
         """Returns the power consumption of yesterday.
         - **{dev_id}**: The dev_id of the device.
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
@@ -259,7 +402,8 @@ def create_app():
 
     # g
     @app.get("/dev_id/{dev_id}/json/last_month/consumption", tags=["Views"])
-    def get_json_last_month_consumption(dev_id: str = None, from_cache: bool = False, simplify: bool = False):
+    def get_json_last_month_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
+                                        dev_id: str = None, from_cache: bool = False, simplify: bool = False):
         """Returns the power consumption from the first day until the last day of last month.
         - **{dev_id}**: The dev_id of the device.
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
@@ -293,7 +437,8 @@ def create_app():
                 }
 
     @app.get("/dev_id/{dev_id}/json/30days/average_consumption", tags=["Views"])
-    def get_json_30days_average_consumption(dev_id: str = None, from_cache: bool = False, simplify: bool = False):
+    def get_json_30days_average_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
+                                            dev_id: str = None, from_cache: bool = False, simplify: bool = False):
         """Returns the average daily consumption in the last 30 days.
         - **{dev_id}**: The dev_id of the device.
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
@@ -336,7 +481,9 @@ def create_app():
                 }
 
     @app.get("/dev_id/{dev_id}/json/30days/average_consumption_div_home_size", tags=["Views"])
-    def get_json_30days_average_consumption_div_home_size(dev_id: str = None, from_cache: bool = False):
+    def get_json_30days_average_consumption_div_home_size(
+            current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
+            from_cache: bool = False):
         """Returns the average daily consumption in the last 30 days divided by the size of the home
         - **{dev_id}**: The dev_id of the device.
         - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
@@ -346,10 +493,11 @@ def create_app():
             home_size = float(get_meta("Household m2", dev_id))
         else:
             raise MissingMetadataField('Household m2')
-        return float(get_json_30days_average_consumption(dev_id, from_cache, simplify=True)) / home_size
+        return float(get_json_30days_average_consumption(current_user, dev_id, from_cache, simplify=True)) / home_size
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
-    def get_json_date_mean_consumption(dev_id: str = None, date: str = None, from_cache: bool = False):
+    def get_json_date_mean_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
+                                       dev_id: str = None, date: str = None, from_cache: bool = False):
         """Returns the power consumption over the size of the building for the given date.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
@@ -365,7 +513,8 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/meta", tags=["Metadata"])
     @app.get("/dev_id/{dev_id}/meta/{field}", tags=["Metadata"])
-    def get_json_meta(dev_id: str = None, field: str = None):
+    def get_json_meta(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
+                      field: str = None):
         """Returns the metadata for the current house.
         - **{dev_id}**: The dev_id of the device.
         - **{meta}**: Optional endpoint that specifies the field to be returned if it exists in metadata, otherwise an
@@ -375,7 +524,7 @@ def create_app():
         return get_meta(field, db=dev_id)
 
     @app.get("/dev_id/{dev_id}/has-meta/{field}", tags=["Metadata"])
-    def get_has_meta(dev_id: str, field: str):
+    def get_has_meta(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, field: str):
         """Returns true if given **{field}** exists as metadata field for device with **{field}** , and it is not equal to string "null".
         """
         check_device_existence(dev_id)
@@ -383,7 +532,8 @@ def create_app():
 
     # @app.get("/dev_id/{dev_id}/set-meta/{field}/", tags=["Metadata"])
     @app.get("/dev_id/{dev_id}/set-meta/{field}/{value}", tags=["Metadata"])
-    def set_meta(dev_id: str, field: str, value: Union[bool, int, float, str, None] = None):
+    def set_meta(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, field: str,
+                 value: Union[bool, int, float, str, None] = None):
         """Set meta field. If field exist it is getting update.
         """
         check_device_existence(dev_id)
@@ -396,7 +546,7 @@ def create_app():
             raise SchemaValidationForMetaFailed(e.message)
 
     @app.get("/meta/schema", tags=["Metadata"])
-    def meta_schema():
+    def meta_schema(current_user: Annotated[User, Depends(get_current_active_user)], ):
         """Returns the meta schema
         """
         return CleanEmonCore.json_utils.schemas.schema_meta

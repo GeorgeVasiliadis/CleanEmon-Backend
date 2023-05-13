@@ -13,6 +13,14 @@ from .. import CACHE_DIR
 adapter = CouchDBAdapter(CONFIG_FILE)
 
 
+def fetch_document(document: str, db: str):
+    return adapter._fetch_document(document=document, db=db)
+
+
+def create_document(document: str, db: str, data):
+    return adapter.create_document(name=document, db=db, initial_data=data)
+
+
 def fetch_data(date_id: str, *, from_cache=False, db: str = None) -> EnergyData:
     if not os.path.exists(CACHE_DIR):
         os.mkdir(CACHE_DIR)
@@ -41,8 +49,10 @@ def fetch_data(date_id: str, *, from_cache=False, db: str = None) -> EnergyData:
 
     return energy_data
 
+
 def get_last_value(db: str):
     return adapter.get_last_energy_data_record(db)
+
 
 def send_data(date_id: str, data: EnergyData, db: str = None):
     return adapter.update_energy_data_by_date(date_id, data, db=db)

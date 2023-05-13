@@ -1,6 +1,5 @@
 """This module defines the core functionality of the API"""
 
-
 from datetime import datetime
 from datetime import timedelta
 from io import BytesIO
@@ -11,15 +10,20 @@ from typing import Union
 
 from CleanEmonCore.models import EnergyData
 
-from CleanEmonBackend.lib.DBConnector import fetch_data
+from CleanEmonBackend.lib.DBConnector import fetch_data, fetch_document, create_document
+
 from ..lib.DBConnector import adapter
 from ..lib.DBConnector import get_last_value
 from ..lib.DBConnector import get_view_daily_consumption
 from ..lib.DBConnector import send_meta
+from ..lib.authenticator_config import UserInDB, UserInDBDataClass
 from ..lib.plots import plot_data
 
+USERS_DB_NAME = "app_users"
 
-def get_data(date: Optional[str], from_cache: bool, sensors: List[str] = None, db: str = None, keep_last_only : bool = False) -> EnergyData:
+
+def get_data(date: Optional[str], from_cache: bool, sensors: List[str] = None, db: str = None,
+             keep_last_only: bool = False) -> EnergyData:
     """Fetches and prepares the daily data that will be returned, filtering in the provided `sensors`.
     Note that there is no need to explicitly specify the "timestamp sensor", as it will always be included.
 
@@ -44,7 +48,7 @@ def get_data(date: Optional[str], from_cache: bool, sensors: List[str] = None, d
     else:
         data = raw_data
     if keep_last_only:
-        data=data[-1:] # remove all items except the last one
+        data = data[-1:]  # remove all items except the last one
     return EnergyData(date, data)
 
 
@@ -159,3 +163,24 @@ def has_meta(field: str, db: str = None) -> bool:
 
 def set_meta_field(field: str, meta: Union[bool, int, float, str, None], db: str):
     return send_meta(field, meta, db=db)
+
+
+def fetch_account_info(username: str):
+    return fetch_document(username, USERS_DB_NAME)
+
+
+def create_account(account: UserInDB) -> bool:
+    """
+    @param account:
+    @return: True if account created OK, false if the account creation failed
+    """
+
+    account.disabled = True
+
+    user_dataclass = UserInDBDataClass(account.username,
+                                       account.hashed_password,
+                                       account.disabled
+                                       )
+
+    return create_document(document=account.username, db=USERS_DB_NAME,
+                           data=user_dataclass) != ""  # If empty there was a problem
