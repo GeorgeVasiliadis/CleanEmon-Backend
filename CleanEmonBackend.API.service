@@ -4,11 +4,10 @@ After=network.target
 StartLimitIntervalSec=0
 
 [Service]
-Type=Simple
+Type=simple
 Restart=always
 RestartSec=1
-User=__CHANGE_ME__
-ExecStart=/__CHANGE_ME__/python3 -m uvicorn CleanEmonBackend.API:api --host 0.0.0.0
+ExecStart=/home/kamazgal/miniconda3/envs/NILM-Inference-APIs/bin/uvicorn CleanEmonBackend.API:api --host 0.0.0.0 --root-path /api
 
 [Install]
 WantedBy=multi-user.target
