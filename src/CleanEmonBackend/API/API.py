@@ -161,7 +161,7 @@ def has_meta(field: str, db: str = None) -> bool:
     return value != "null"
 
 
-def set_meta_field(field: str, meta: Union[bool, int, float, str, None], db: str):
+def set_meta_field(field: str, meta: Union[int, float, bool, str, None], db: str):
     return send_meta(field, meta, db=db)
 
 

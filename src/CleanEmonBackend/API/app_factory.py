@@ -359,15 +359,15 @@ def create_app():
 
         return StreamingResponse(get_plot(parsed_date, from_cache, sensors, db=dev_id), media_type="image/svg+xml")
 
-    @app.get("/dev_id/{dev_id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
-    def get_plot_range(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, from_date: str,
-                       to_date: str, from_cache: bool = False,
-                       sensors: Optional[str] = None):  # TODO Maybe implemented this feature if is necessary.
-        """Under construction :)"""
-        return JSONResponse(
-            status_code=501,
-            content={"message": "This feature is currently not implemented"}
-        )
+    # @app.get("/dev_id/{dev_id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
+    # def get_plot_range(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, from_date: str,
+    #                    to_date: str, from_cache: bool = False,
+    #                    sensors: Optional[str] = None):  # TODO Maybe implemented this feature if is necessary.
+    #     """Under construction :)"""
+    #     return JSONResponse(
+    #         status_code=501,
+    #         content={"message": "This feature is currently not implemented"}
+    #     )
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/consumption", tags=["Views"])
     def get_json_date_consumption(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
@@ -533,7 +533,7 @@ def create_app():
     # @app.get("/dev_id/{dev_id}/set-meta/{field}/", tags=["Metadata"])
     @app.get("/dev_id/{dev_id}/set-meta/{field}/{value}", tags=["Metadata"])
     def set_meta(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, field: str,
-                 value: Union[bool, int, float, str, None] = None):
+                 value: Union[int, float, bool, str, None] = None):
         """Set meta field. If field exist it is getting update.
         """
         check_device_existence(dev_id)

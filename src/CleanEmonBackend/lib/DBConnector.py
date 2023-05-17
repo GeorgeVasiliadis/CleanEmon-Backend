@@ -58,7 +58,7 @@ def send_data(date_id: str, data: EnergyData, db: str = None):
     return adapter.update_energy_data_by_date(date_id, data, db=db)
 
 
-def send_meta(field: str, meta: Union[bool, int, float, str], db: str = None):
+def send_meta(field: str, meta: Union[int, float, bool, str, None], db: str = None):
     adapter.update_meta(field, value=meta, db=db)
 
 
