@@ -1,17 +1,6 @@
 import os
 
 from CleanEmonCore.dotfiles import get_dotfile
-from CleanEmonCore.dotfiles import DOT_DIR_PATH
-
-DATA_DIR = os.path.join(DOT_DIR_PATH, "data")
-RES_DIR = os.path.join(DOT_DIR_PATH, "res")
-
-# Ensure that the data dir exists
-if not os.path.isdir(DATA_DIR):
-    os.mkdir(DATA_DIR)
-
-CACHE_DIR = os.path.join(DATA_DIR, "cache")
-PLOT_DIR = os.path.join(DATA_DIR, "plots")
 
 # --- NILM-Inference-APIs ---
 _NILM_CONFIG = "NILM-Inference-APIs.path"

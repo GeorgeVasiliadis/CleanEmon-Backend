@@ -12,11 +12,6 @@ import numpy as np
 
 from CleanEmonCore.models import EnergyData
 
-from .. import PLOT_DIR
-
-if not os.path.exists(PLOT_DIR):
-    os.makedirs(PLOT_DIR, exist_ok=True)
-
 
 def timestamp_to_label(stamp):
     """Converts `stamp` into a datetime object and returns its reformatted string representation"""
@@ -113,5 +108,3 @@ def plot_data(energy_data: EnergyData, *, columns: List[str] = None, name="plot"
     return buf
 
 
-def plot_data2(energy_data: EnergyData, *, columns: List[str] = None, name="plot"):
-    pass

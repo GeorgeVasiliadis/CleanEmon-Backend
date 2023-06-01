@@ -16,20 +16,22 @@ from CleanEmonBackend.Devices.devices import Devices
 devices = Devices()
 
 
-def update(yesterday: str):
+def update(yesterday: str, device_id: str = None):
     # TODO : Maybe add multiprocessing with threads to speed up. Check this:
     # https://stackoverflow.com/questions/15143837/how-to-multi-thread-an-operation-within-a-loop-in-python
-    for _ in devices.get_devices():  # For every registered device do the disaggregation.
-        energy_data = fetch_data(yesterday, db=_)
+    for device in devices.get_devices():  # For every registered device do the disaggregation.
+        if device_id is not None and device_id != device:
+            continue
+        energy_data = fetch_data(yesterday, db=device)
         if len(energy_data.energy_data) == 0:  # If no data is available for this device skip it completely
             continue
-        print("run for device", _)
+        print("run for device", device)
         df = energy_data_to_dataframe(energy_data)
         import CleanEmonBackend.API.API
-        meta = CleanEmonBackend.API.API.get_meta(field=None, db=_)
+        meta = CleanEmonBackend.API.API.get_meta(field=None, db=device)
         df = disaggregate(df, meta=meta)
         dis_energy_data = dataframe_to_energy_data(df)
-        send_data(yesterday, dis_energy_data, db=_)
+        send_data(yesterday, dis_energy_data, db=device)
 
 
 def run():

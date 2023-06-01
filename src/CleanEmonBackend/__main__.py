@@ -10,6 +10,7 @@ service_parser.add_argument("service_name", action="store", choices=["api", "dis
 # Script
 script_parser = subparsers.add_parser("script", help="Run a script")
 script_parser.add_argument("script_name", action="store", choices=["disaggregate"])
+script_parser.add_argument("device_id", action="store", help="ID of the device")
 script_parser.add_argument("dates", nargs="*",
                            help="list of dates (YYYY-MM-DD) to be used in `disaggregate` or `reset`")
 script_parser.add_argument("--no-safe", action="store_false", default=False,
@@ -23,16 +24,19 @@ args = parser.parse_args()
 if "service_name" in args:
     if args.service_name == "api":
         from .API.service import run
+
         run()
     elif args.service_name == "disaggregate":
         from .Disaggregator.service import run
+
         run()
 
 elif "script_name" in args:
     if args.script_name == "disaggregate":
         from CleanEmonBackend.scripts.disaggregate import disaggregate
+
         if args.dates:
-            disaggregate(*args.dates, no_prompt=args.no_safe)
+            disaggregate(*args.dates, args.device_id, no_prompt=args.no_safe)
         else:
             print("You should provide at least one date")
 

@@ -16,7 +16,7 @@ from passlib.context import CryptContext
 from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
-from CleanEmonBackend.API.API import fetch_account_info, create_account
+from CleanEmonBackend.API.API import fetch_account_info, create_account, get_preds_consumption, get_dates_consumptions
 from CleanEmonBackend.Devices.devices import Devices
 from CleanEmonBackend.lib.authenticator_config import SECRET_KEY, ALGORITHM, Token, TokenData, UserInDB, User, \
     is_couchdb_safe_username
@@ -139,6 +139,18 @@ def create_app():
 
     app = FastAPI(openapi_tags=meta_tags, swagger_ui_parameters={"defaultModelsExpandDepth": -1,
                                                                  "syntaxHighlight": False})
+
+    from fastapi.middleware.cors import CORSMiddleware
+    origins = ["*"]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
 
     def parse_date(date: str) -> str:
         """Simple date parser. A date can either be in a standard YYYY-MM-DD format or a predefined alias.
@@ -269,13 +281,12 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/date/{date}", tags=["Views"])
     def get_json_date(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
-                      date: str = None, from_cache: bool = False,
+                      date: str = None, downsampling: bool = False,
                       sensors: Optional[str] = None) -> Response:
         """Returns the daily data the supplied **{date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
-        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
-        data will be looked up in cache and then, if they are not found, fetched from the central database.
+        - **downsampling** : If set to True the returned signals interval has been increased thus return less data.
         - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
         list will be returned
         """
@@ -286,7 +297,7 @@ def create_app():
             sensors = sensors.split(',')
 
         return Response(
-            content=orjson.dumps(get_data(parsed_date, from_cache, sensors, db=dev_id)),
+            content=orjson.dumps(get_data(parsed_date, sensors, db=dev_id, down_sampling=downsampling)),
             media_type="application/json"
         )
 
@@ -308,17 +319,16 @@ def create_app():
         if sensors:
             sensors = sensors.split(',')
 
-        return get_data(None, False, sensors, db=dev_id, keep_last_only=True)
+        return get_data(date=None, sensors=sensors, db=dev_id, keep_last_only=True)
 
     @app.get("/dev_id/{dev_id}/json/range/{from_date}/{to_date}", tags=["Views"])
     def get_json_range(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, from_date: str,
-                       to_date: str, from_cache: bool = False,
+                       to_date: str,
+                       downsampling: bool = False,
                        sensors: Optional[str] = None):
         """Returns the range data for the supplied range, from **{from_date}** to **{to_date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **to_date**: A date in YYYY-MM-DD format. It should be chronologically greater or equal to **{from_date}**
-        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
-        data will be looked up in cache and then, if they are not found, fetched from the central database.
         - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
         list will be returned
         """
@@ -330,10 +340,36 @@ def create_app():
             sensors = sensors.split(',')
 
         return Response(
-            content=orjson.dumps(get_range_data(from_date, to_date, from_cache, sensors, db=dev_id)),
+            content=orjson.dumps(get_range_data(from_date, to_date, sensors, db=dev_id, down_sampling=downsampling)),
             media_type="application/json"
         )
         # return get_range_data(from_date, to_date, from_cache, sensors, db=dev_id)
+
+    @app.get("/dev_id/{dev_id}/days_consumptions/range/{from_date}/{to_date}", tags=["Views"])
+    def get_days_consumption_range(current_user: Annotated[User, Depends(get_current_active_user)],
+                                   dev_id: str, from_date: str, to_date: str, summarize: bool):
+        """Returns the power consumption for the given dates in range from **{from_date}** to **{to_date}** for the
+        device with **{dev_id}**. - **{dev_id}**: The dev_id of the device. - **to_date**: A date in YYYY-MM-DD
+        format. It should be chronologically greater or equal to **{from_date}** -
+        """
+        check_device_existence(dev_id)
+        if not is_valid_date_range(from_date, to_date):
+            raise BadDateRangeError(from_date, to_date)
+
+        return get_dates_consumptions(from_date, to_date, dev_id, summarize)
+
+    @app.get("/dev_id/{dev_id}/pred_consumption/range/{from_date}/{to_date}", tags=["Views"])
+    def get_pred_consumption_range(current_user: Annotated[User, Depends(get_current_active_user)],
+                                   dev_id: str, from_date: str, to_date: str, summarize: bool):
+        """Returns consumption of each pred, from **{from_date}** to **{to_date}** for the device with **{dev_id}**.
+        - **{dev_id}**: The dev_id of the device.
+        - **to_date**: A date in YYYY-MM-DD format. It should be chronologically greater or equal to **{from_date}**
+        """
+        check_device_existence(dev_id)
+        if not is_valid_date_range(from_date, to_date):
+            raise BadDateRangeError(from_date, to_date)
+
+        return get_preds_consumption(from_date, to_date, dev_id, summarize)
 
     @app.get("/devices", tags=["Views"])
     def get_devices(current_user: Annotated[User, Depends(get_current_active_user)]):
@@ -342,12 +378,10 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/plot/date/{date}", tags=["Experimental"])
     def get_plot_date(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
-                      date: str = None, from_cache: bool = False, sensors: Optional[str] = None):
+                      date: str = None, sensors: Optional[str] = None):
         """Returns the plot of the specified data, as an SVG vector image, for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
-        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
-        data will be looked up in cache and then, if they are not found, fetched from the central database.
         - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
         list will be returned
         """
@@ -357,7 +391,7 @@ def create_app():
         if sensors:
             sensors = sensors.split(',')
 
-        return StreamingResponse(get_plot(parsed_date, from_cache, sensors, db=dev_id), media_type="image/svg+xml")
+        return StreamingResponse(get_plot(parsed_date, sensors, db=dev_id), media_type="image/svg+xml")
 
     # @app.get("/dev_id/{dev_id}/plot/range/{from_date}/{to_date}", tags=["Experimental"])
     # def get_plot_range(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, from_date: str,
@@ -371,49 +405,43 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/consumption", tags=["Views"])
     def get_json_date_consumption(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
-                                  date: str = None, from_cache: bool = False,
+                                  date: str = None,
                                   simplify: bool = False):
         """Returns the power consumption for the given date.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
-        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
-        data will be looked up in cache and then, if they are not found, fetched from the central database
         - **simplify**: If set to True, only the pure numerical value will be returned
         """
         check_device_existence(dev_id)
         parsed_date = parse_date(date)
 
-        return get_date_consumption(parsed_date, from_cache, simplify, db=dev_id)
+        return get_date_consumption(parsed_date, simplify, db=dev_id)
 
     # b)
     @app.get("/dev_id/{dev_id}/json/yesterday/consumption", tags=["Views"])
     def get_json_yesterday_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
-                                       dev_id: str = None, from_cache: bool = False, simplify: bool = False):
+                                       dev_id: str = None, simplify: bool = False):
         """Returns the power consumption of yesterday.
         - **{dev_id}**: The dev_id of the device.
-        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
-        data will be looked up in cache and then, if they are not found, fetched from the central database
         - **simplify**: If set to True, only the pure numerical value will be returned
         """
         check_device_existence(dev_id)
         parsed_date = parse_date("yesterday")
 
-        return get_date_consumption(parsed_date, from_cache, simplify, db=dev_id)
+        return get_date_consumption(parsed_date, simplify, db=dev_id)
 
     # g
     @app.get("/dev_id/{dev_id}/json/last_month/consumption", tags=["Views"])
     def get_json_last_month_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
-                                        dev_id: str = None, from_cache: bool = False, simplify: bool = False):
+                                        dev_id: str = None, simplify: bool = False):
         """Returns the power consumption from the first day until the last day of last month.
         - **{dev_id}**: The dev_id of the device.
-        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
-        data will be looked up in cache and then, if they are not found, fetched from the central database
         - **simplify**: If set to True, only the pure numerical value will be returned
         """
         check_device_existence(dev_id)
 
         days = get_last_month_days()
-        consumptions = [get_date_consumption(_.strftime('%Y-%m-%d'), from_cache, True, db=dev_id) for _ in days]
+        consumptions = [get_date_consumption(_.strftime('%Y-%m-%d'), True, db=dev_id) for _ in days]
         number_of_empty_days = consumptions.count(0)
         missing_data = True if number_of_empty_days != 0 else False
 
@@ -438,17 +466,15 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/30days/average_consumption", tags=["Views"])
     def get_json_30days_average_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
-                                            dev_id: str = None, from_cache: bool = False, simplify: bool = False):
+                                            dev_id: str = None, simplify: bool = False):
         """Returns the average daily consumption in the last 30 days.
         - **{dev_id}**: The dev_id of the device.
-        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
-        data will be looked up in cache and then, if they are not found, fetched from the central database
         - **simplify**: If set to True, only the pure numerical value will be returned
         """
         check_device_existence(dev_id)
 
         days = [datetime.date.today() - datetime.timedelta(days=i) for i in range(29, -1, -1)]  # last 30 days
-        consumptions = [get_date_consumption(_.strftime('%Y-%m-%d'), from_cache, True, db=dev_id) for _ in days]
+        consumptions = [get_date_consumption(_.strftime('%Y-%m-%d'), True, db=dev_id) for _ in days]
         # If missing date exist make the window smaller
         window_start_pos = 0
         window_end_pos = len(consumptions) - 1
@@ -482,31 +508,27 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/30days/average_consumption_div_home_size", tags=["Views"])
     def get_json_30days_average_consumption_div_home_size(
-            current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
-            from_cache: bool = False):
+            current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None):
         """Returns the average daily consumption in the last 30 days divided by the size of the home
         - **{dev_id}**: The dev_id of the device.
-        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
-        data will be looked up in cache and then, if they are not found, fetched from the central database
         """
         if has_meta("Household m2", dev_id):
             home_size = float(get_meta("Household m2", dev_id))
         else:
             raise MissingMetadataField('Household m2')
-        return float(get_json_30days_average_consumption(current_user, dev_id, from_cache, simplify=True)) / home_size
+        return float(get_json_30days_average_consumption(current_user, dev_id, simplify=True)) / home_size
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
     def get_json_date_mean_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
-                                       dev_id: str = None, date: str = None, from_cache: bool = False):
+                                       dev_id: str = None, date: str = None):
         """Returns the power consumption over the size of the building for the given date.
         - **{dev_id}**: The dev_id of the device.
         - **{date}**: A date in YYYY-MM-DD format
-        - **from_cache**: If set to False, forces data to be fetched again from the central database. If set to True,
         data will be looked up in cache and then, if they are not found, fetched from the central database
         """
         check_device_existence(dev_id)
         parsed_date = parse_date(date)
-        res = get_mean_consumption(parsed_date, from_cache, db=dev_id)
+        res = get_mean_consumption(parsed_date, db=dev_id)
         if res == -1:
             raise MissingMetadataField('Household m2')
         return res
@@ -561,3 +583,5 @@ def get_last_month_days():
 
     days = [start_last_month + datetime.timedelta(days=i) for i in range(delta.days + 1)]
     return days
+
+

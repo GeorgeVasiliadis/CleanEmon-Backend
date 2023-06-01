@@ -22,19 +22,18 @@ from ..lib.plots import plot_data
 USERS_DB_NAME = "app_users"
 
 
-def get_data(date: Optional[str], from_cache: bool, sensors: List[str] = None, db: str = None,
-             keep_last_only: bool = False) -> EnergyData:
+def get_data(date: Optional[str], sensors: List[str] = None, db: str = None,
+             keep_last_only: bool = False, down_sampling: bool = False) -> EnergyData:
     """Fetches and prepares the daily data that will be returned, filtering in the provided `sensors`.
     Note that there is no need to explicitly specify the "timestamp sensor", as it will always be included.
 
     date -- a valid date string in `YYYY-MM-DD` format
-    from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
     sensors -- an inclusive list containing the values of interest
     """
 
     if keep_last_only:
         return get_last_value(db)
-    raw_data = fetch_data(date, from_cache=from_cache, db=db).energy_data
+    raw_data = fetch_data(date, db=db, down_sampling=down_sampling).energy_data
 
     if sensors:
         if "timestamp" not in sensors:
@@ -52,12 +51,12 @@ def get_data(date: Optional[str], from_cache: bool, sensors: List[str] = None, d
     return EnergyData(date, data)
 
 
-def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[str] = None, db: str = None) -> Dict:
+def get_range_data(from_date: str, to_date: str, sensors: List[str] = None, db: str = None,
+                   down_sampling: bool = False) -> Dict:
     """Fetches and prepares the range data that will be returned.
 
     from_date -- a valid date string in `YYYY-MM-DD` format
     to_date -- a valid date string in `YYYY-MM-DD` format. It MUST be chronologically greater or equal to `from_date`
-    from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
     sensors -- an inclusive list containing the values of interest
     """
 
@@ -77,27 +76,26 @@ def get_range_data(from_date: str, to_date: str, use_cache: bool, sensors: List[
     now = from_dt
     while now <= to_dt:
         now_str = now.strftime("%Y-%m-%d")
-        daily_data = get_data(now_str, use_cache, sensors, db=db)
+        daily_data = get_data(now_str, sensors, db=db, down_sampling=down_sampling)
         data["range_data"].append(daily_data)
         now += one_day
 
     return data
 
 
-def get_plot(date: str, from_cache: bool, sensors: List[str] = None, db: str = None) -> BytesIO:
+def get_plot(date: str, sensors: List[str] = None, db: str = None) -> BytesIO:
     """Fetches and plots the desired data. Returns the path of the resulting plot.
 
     date -- a valid date string in `YYYY-MM-DD` format
-    from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
     sensors -- an inclusive list containing the values of interest
     """
 
-    energy_data = get_data(date, from_cache, sensors, db=db)
+    energy_data = get_data(date, sensors, db=db)
 
     return plot_data(energy_data, columns=sensors)
 
 
-def get_date_consumption(date: str, from_cache: bool, simplify: bool, db: str = None):
+def get_date_consumption(date: str, simplify: bool, db: str = None):
     """Hardcoded fetch-prepare accumulator function that handles the daily KwH. Returns the daily consumption in kwh.
 
     Acts as an under-the-curve measurement by subtracting the lowest power measurement from the highest one.
@@ -105,7 +103,6 @@ def get_date_consumption(date: str, from_cache: bool, simplify: bool, db: str = 
     value" is actually searched and cherry-picked. Same goes for the "last valid value".
 
     date -- a valid date string in `YYYY-MM-DD` format
-    from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
     simplify -- if true, returns a single value, not a JSON object
     """
 
@@ -121,18 +118,21 @@ def get_date_consumption(date: str, from_cache: bool, simplify: bool, db: str = 
     return data
 
 
-def get_mean_consumption(date: str, from_cache: bool, db: str = None) -> float:
+def get_dates_consumptions(start_day: str, end_day: str, db: str, summation: bool):
+    return adapter.view_daily_consumptions_range(day_start=start_day, day_end=end_day, db=db, summation=summation)
+
+
+def get_mean_consumption(date: str, db: str = None) -> float:
     """Hardcoded fetch-prepare function that returns the daily consumption over the size of the building.
     If the given building has no appropriate information (e.g. no "size" meta-data) -1 is being returned.
 
     Mean Consumption is calculated as:  daily_consumption_of_date  /  size_of_building
 
     date -- a valid date string in `YYYY-MM-DD` format
-    from_cache -- specifies whether the data should be searched in cache first. This may speed up the response time
     """
     _size_field = "Household m2"  # Hardcoded field - get_meta is not intended to be used in this way
 
-    consumption: float = get_date_consumption(date, from_cache, simplify=True, db=db)
+    consumption: float = get_date_consumption(date, simplify=True, db=db)
 
     if has_meta(_size_field, db):
         size = float(get_meta(_size_field, db))
@@ -184,3 +184,7 @@ def create_account(account: UserInDB) -> bool:
 
     return create_document(document=account.username, db=USERS_DB_NAME,
                            data=user_dataclass) != ""  # If empty there was a problem
+
+
+def get_preds_consumption(start_day: str, end_day: str, db: str, summation: bool):
+    return adapter.get_pred_consumption(db=db, day_start=start_day, day_end=end_day, summation=summation)
