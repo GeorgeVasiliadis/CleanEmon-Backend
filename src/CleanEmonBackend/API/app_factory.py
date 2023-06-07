@@ -1,14 +1,14 @@
 """This defines the FastAPI boostrap function"""
 
 import datetime
-from typing import Optional
+from typing import Optional, List
 from typing import Union
 
 import CleanEmonCore.json_utils.schemas
 import orjson
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi import Request, Form
-from fastapi import Response
+from fastapi import Response, Path, Query
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -17,6 +17,7 @@ from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
 from CleanEmonBackend.API.API import fetch_account_info, create_account, get_preds_consumption, get_dates_consumptions
+import CleanEmonBackend.API.queery_parameters_model as qmodel
 from CleanEmonBackend.Devices.devices import Devices
 from CleanEmonBackend.lib.authenticator_config import SECRET_KEY, ALGORITHM, Token, TokenData, UserInDB, User, \
     is_couchdb_safe_username
@@ -137,20 +138,21 @@ def create_app():
         }
     ]
 
-    app = FastAPI(openapi_tags=meta_tags, swagger_ui_parameters={"defaultModelsExpandDepth": -1,
-                                                                 "syntaxHighlight": False})
+    description = """
+    CleanEmon API - Energy Data
 
-    from fastapi.middleware.cors import CORSMiddleware
-    origins = ["*"]
+    The CleanEmon API, originally developed by George Vasiliadis, expanded by Konstantinos Mazgaltzidis allows you to fetch and review energy data consumptions for each device. It also provides access to metadata and enables home appliance disaggregation, allowing you to analyze and identify energy consumption patterns of individual appliances.
+    """
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
+    app = FastAPI(title="CleanEmonAPI",
+                  description=description,
+                  openapi_tags=meta_tags,
+                  swagger_ui_parameters={"defaultModelsExpandDepth": -1, "syntaxHighlight": False},
+                  contact={
+                      "name": "Konstantinos Mazgaltzidis",
+                      "email": "kamazgal@csd.auth.gr",
+                  }
+                  )
 
     def parse_date(date: str) -> str:
         """Simple date parser. A date can either be in a standard YYYY-MM-DD format or a predefined alias.
@@ -280,15 +282,15 @@ def create_app():
             )
 
     @app.get("/dev_id/{dev_id}/json/date/{date}", tags=["Views"])
-    def get_json_date(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
-                      date: str = None, downsampling: bool = False,
-                      sensors: Optional[str] = None) -> Response:
-        """Returns the daily data the supplied **{date}** for the device with **{dev_id}**.
-        - **{dev_id}**: The dev_id of the device.
-        - **{date}**: A date in YYYY-MM-DD format
-        - **downsampling** : If set to True the returned signals interval has been increased thus return less data.
-        - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
-        list will be returned
+    def get_json_date(
+            current_user: Annotated[User, Depends(get_current_active_user)],
+            dev_id: Annotated[str, qmodel.doc_dev_id],
+            date: Annotated[str, qmodel.doc_date],
+            downsampling: Optional[bool] = qmodel.doc_downsampling,
+            sensors: Optional[str] = qmodel.doc_sensors
+    ):
+        """
+        Returns the daily data for the supplied **{date}** for the device with **{dev_id}**.
         """
         check_device_existence(dev_id)
         parsed_date = parse_date(date)
@@ -301,19 +303,12 @@ def create_app():
             media_type="application/json"
         )
 
-        # return get_data(parsed_date, from_cache, sensors, db=dev_id)
-
-        # return get_data(parsed_date, from_cache, sensors, db=dev_id)
-
-    # a)
     @app.get("/dev_id/{dev_id}/json/last_value", tags=["Views"])
-    def get_json_last_value(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
-                            sensors: Optional[str] = None):
-        """Returns the last value from today for the device with **{dev_id}**.
-        - **{dev_id}**: The dev_id of the device.
-        - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
-        list will be returned
-        """
+    def get_json_last_value(current_user: Annotated[User, Depends(get_current_active_user)],
+                            dev_id: Annotated[str, qmodel.doc_dev_id],
+                            sensors: Optional[str] = qmodel.doc_sensors
+                            ):
+        """Returns the most recent record for the device with **{dev_id}**."""
         check_device_existence(dev_id)
 
         if sensors:
@@ -322,16 +317,15 @@ def create_app():
         return get_data(date=None, sensors=sensors, db=dev_id, keep_last_only=True)
 
     @app.get("/dev_id/{dev_id}/json/range/{from_date}/{to_date}", tags=["Views"])
-    def get_json_range(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, from_date: str,
-                       to_date: str,
-                       downsampling: bool = False,
-                       sensors: Optional[str] = None):
-        """Returns the range data for the supplied range, from **{from_date}** to **{to_date}** for the device with **{dev_id}**.
-        - **{dev_id}**: The dev_id of the device.
-        - **to_date**: A date in YYYY-MM-DD format. It should be chronologically greater or equal to **{from_date}**
-        - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
-        list will be returned
-        """
+    def get_json_range(current_user: Annotated[User, Depends(get_current_active_user)],
+                       dev_id: Annotated[str, qmodel.doc_dev_id],
+                       from_date: Annotated[str, qmodel.doc_from_date],
+                       to_date: Annotated[str, qmodel.doc_to_date],
+                       downsampling: Optional[bool] = qmodel.doc_downsampling,
+                       sensors: Optional[str] = qmodel.doc_sensors
+                       ):
+        """Returns the range data for the supplied range, from **{from_date}** to **{to_date}** for the device with
+        **{dev_id}**."""
         check_device_existence(dev_id)
         if not is_valid_date_range(from_date, to_date):
             raise BadDateRangeError(from_date, to_date)
@@ -347,10 +341,12 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/days_consumptions/range/{from_date}/{to_date}", tags=["Views"])
     def get_days_consumption_range(current_user: Annotated[User, Depends(get_current_active_user)],
-                                   dev_id: str, from_date: str, to_date: str, summarize: bool):
+                                   dev_id: Annotated[str, qmodel.doc_dev_id],
+                                   from_date: Annotated[str, qmodel.doc_from_date],
+                                   to_date: Annotated[str, qmodel.doc_to_date],
+                                   summarize: Annotated[bool, qmodel.doc_summarize]):
         """Returns the power consumption for the given dates in range from **{from_date}** to **{to_date}** for the
-        device with **{dev_id}**. - **{dev_id}**: The dev_id of the device. - **to_date**: A date in YYYY-MM-DD
-        format. It should be chronologically greater or equal to **{from_date}** -
+        device with **{dev_id}**.-
         """
         check_device_existence(dev_id)
         if not is_valid_date_range(from_date, to_date):
@@ -360,7 +356,10 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/pred_consumption/range/{from_date}/{to_date}", tags=["Views"])
     def get_pred_consumption_range(current_user: Annotated[User, Depends(get_current_active_user)],
-                                   dev_id: str, from_date: str, to_date: str, summarize: bool):
+                                   dev_id: Annotated[str, qmodel.doc_dev_id],
+                                   from_date: Annotated[str, qmodel.doc_from_date],
+                                   to_date: Annotated[str, qmodel.doc_to_date],
+                                   summarize: Annotated[bool, qmodel.doc_summarize]):
         """Returns consumption of each pred, from **{from_date}** to **{to_date}** for the device with **{dev_id}**.
         - **{dev_id}**: The dev_id of the device.
         - **to_date**: A date in YYYY-MM-DD format. It should be chronologically greater or equal to **{from_date}**
@@ -372,19 +371,17 @@ def create_app():
         return get_preds_consumption(from_date, to_date, dev_id, summarize)
 
     @app.get("/devices", tags=["Views"])
-    def get_devices(current_user: Annotated[User, Depends(get_current_active_user)]):
+    def get_devices(current_user: Annotated[User, Depends(get_current_active_user)]) -> List[str]:
         """Returns the list of devices that are registered."""
         return devices.get_devices()
 
     @app.get("/dev_id/{dev_id}/plot/date/{date}", tags=["Experimental"])
-    def get_plot_date(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
-                      date: str = None, sensors: Optional[str] = None):
-        """Returns the plot of the specified data, as an SVG vector image, for the device with **{dev_id}**.
-        - **{dev_id}**: The dev_id of the device.
-        - **{date}**: A date in YYYY-MM-DD format
-        - **sensors**: A comma (,) separated list of sensors to be returned. If present, only sensors defined in that
-        list will be returned
-        """
+    def get_plot_date(current_user: Annotated[User, Depends(get_current_active_user)],
+                      dev_id: Annotated[str, qmodel.doc_dev_id],
+                      date: Annotated[str, qmodel.doc_date],
+                      sensors: Optional[str] = qmodel.doc_sensors
+                      ) -> StreamingResponse:
+        """Returns the plot of the specified data, as an SVG vector image, for the device with **{dev_id}**."""
         check_device_existence(dev_id)
         parsed_date = parse_date(date)
 
@@ -404,40 +401,34 @@ def create_app():
     #     )
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/consumption", tags=["Views"])
-    def get_json_date_consumption(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
-                                  date: str = None,
-                                  simplify: bool = False):
-        """Returns the power consumption for the given date.
-        - **{dev_id}**: The dev_id of the device.
-        - **{date}**: A date in YYYY-MM-DD format
-        - **simplify**: If set to True, only the pure numerical value will be returned
-        """
+    def get_json_date_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
+                                  dev_id: Annotated[str, qmodel.doc_dev_id],
+                                  date: Annotated[str, qmodel.doc_date],
+                                  simplify: Optional[bool] = qmodel.doc_simplify
+                                  ):
+        """Returns the power consumption for the given date."""
         check_device_existence(dev_id)
         parsed_date = parse_date(date)
 
         return get_date_consumption(parsed_date, simplify, db=dev_id)
 
-    # b)
     @app.get("/dev_id/{dev_id}/json/yesterday/consumption", tags=["Views"])
     def get_json_yesterday_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
-                                       dev_id: str = None, simplify: bool = False):
-        """Returns the power consumption of yesterday.
-        - **{dev_id}**: The dev_id of the device.
-        - **simplify**: If set to True, only the pure numerical value will be returned
-        """
+                                       dev_id: Annotated[str, qmodel.doc_dev_id],
+                                       simplify: Optional[bool] = qmodel.doc_simplify
+                                       ):
+        """Returns the power consumption of yesterday."""
         check_device_existence(dev_id)
         parsed_date = parse_date("yesterday")
 
         return get_date_consumption(parsed_date, simplify, db=dev_id)
 
-    # g
     @app.get("/dev_id/{dev_id}/json/last_month/consumption", tags=["Views"])
     def get_json_last_month_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
-                                        dev_id: str = None, simplify: bool = False):
-        """Returns the power consumption from the first day until the last day of last month.
-        - **{dev_id}**: The dev_id of the device.
-        - **simplify**: If set to True, only the pure numerical value will be returned
-        """
+                                        dev_id: Annotated[str, qmodel.doc_dev_id],
+                                        simplify: Optional[bool] = qmodel.doc_simplify
+                                        ):
+        """Returns the power consumption from the first day until the last day of last month."""
         check_device_existence(dev_id)
 
         days = get_last_month_days()
@@ -466,7 +457,8 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/30days/average_consumption", tags=["Views"])
     def get_json_30days_average_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
-                                            dev_id: str = None, simplify: bool = False):
+                                            dev_id: Annotated[str, qmodel.doc_dev_id],
+                                            simplify: Optional[bool] = qmodel.doc_simplify):
         """Returns the average daily consumption in the last 30 days.
         - **{dev_id}**: The dev_id of the device.
         - **simplify**: If set to True, only the pure numerical value will be returned
@@ -508,10 +500,10 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/30days/average_consumption_div_home_size", tags=["Views"])
     def get_json_30days_average_consumption_div_home_size(
-            current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None):
-        """Returns the average daily consumption in the last 30 days divided by the size of the home
-        - **{dev_id}**: The dev_id of the device.
-        """
+            current_user: Annotated[User, Depends(get_current_active_user)],
+            dev_id: Annotated[str, qmodel.doc_dev_id],
+    ):
+        """Returns the average daily consumption in the last 30 days divided by the size of the home"""
         if has_meta("Household m2", dev_id):
             home_size = float(get_meta("Household m2", dev_id))
         else:
@@ -520,11 +512,9 @@ def create_app():
 
     @app.get("/dev_id/{dev_id}/json/date/{date}/mean-consumption", tags=["Experimental"])
     def get_json_date_mean_consumption(current_user: Annotated[User, Depends(get_current_active_user)],
-                                       dev_id: str = None, date: str = None):
+                                       dev_id: Annotated[str, qmodel.doc_dev_id],
+                                       date: Annotated[str, qmodel.doc_date]):
         """Returns the power consumption over the size of the building for the given date.
-        - **{dev_id}**: The dev_id of the device.
-        - **{date}**: A date in YYYY-MM-DD format
-        data will be looked up in cache and then, if they are not found, fetched from the central database
         """
         check_device_existence(dev_id)
         parsed_date = parse_date(date)
@@ -534,28 +524,32 @@ def create_app():
         return res
 
     @app.get("/dev_id/{dev_id}/meta", tags=["Metadata"])
-    @app.get("/dev_id/{dev_id}/meta/{field}", tags=["Metadata"])
-    def get_json_meta(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str = None,
-                      field: str = None):
-        """Returns the metadata for the current house.
-        - **{dev_id}**: The dev_id of the device.
-        - **{meta}**: Optional endpoint that specifies the field to be returned if it exists in metadata, otherwise an
-        empty dict will be returned. If omitted, all meta fields will be returned.
-        """
+    def get_json_meta(current_user: Annotated[User, Depends(get_current_active_user)],
+                      dev_id: Annotated[str, qmodel.doc_dev_id],
+                      field: Optional[str] = qmodel.doc_field_query):
+        """Returns the metadata for the current house."""
         check_device_existence(dev_id)
         return get_meta(field, db=dev_id)
 
     @app.get("/dev_id/{dev_id}/has-meta/{field}", tags=["Metadata"])
-    def get_has_meta(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, field: str):
-        """Returns true if given **{field}** exists as metadata field for device with **{field}** , and it is not equal to string "null".
+    def get_has_meta(current_user: Annotated[User, Depends(get_current_active_user)],
+                     dev_id: Annotated[str, qmodel.doc_dev_id],
+                     field: Annotated[str, qmodel.doc_field_path]
+                     ):
+        """
+        Returns true if given **{field}** exists as metadata field for device with **{field}**, and it is not equal
+        to string "null".
         """
         check_device_existence(dev_id)
         return has_meta(field, db=dev_id)
 
     # @app.get("/dev_id/{dev_id}/set-meta/{field}/", tags=["Metadata"])
     @app.get("/dev_id/{dev_id}/set-meta/{field}/{value}", tags=["Metadata"])
-    def set_meta(current_user: Annotated[User, Depends(get_current_active_user)], dev_id: str, field: str,
-                 value: Union[int, float, bool, str, None] = None):
+    def set_meta(current_user: Annotated[User, Depends(get_current_active_user)],
+                 dev_id: Annotated[str, qmodel.doc_dev_id],
+                 field: Annotated[str, qmodel.doc_field_path],
+                 value: Union[int, float, bool, str, None] = None
+                 ):
         """Set meta field. If field exist it is getting update.
         """
         check_device_existence(dev_id)
@@ -568,7 +562,7 @@ def create_app():
             raise SchemaValidationForMetaFailed(e.message)
 
     @app.get("/meta/schema", tags=["Metadata"])
-    def meta_schema(current_user: Annotated[User, Depends(get_current_active_user)], ):
+    def meta_schema(current_user: Annotated[User, Depends(get_current_active_user)]):
         """Returns the meta schema
         """
         return CleanEmonCore.json_utils.schemas.schema_meta
@@ -583,5 +577,3 @@ def get_last_month_days():
 
     days = [start_last_month + datetime.timedelta(days=i) for i in range(delta.days + 1)]
     return days
-
-

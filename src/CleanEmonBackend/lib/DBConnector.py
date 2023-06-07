@@ -1,13 +1,10 @@
 """This module contains a set of utilities used to transform and prepare data for torch-nilm inference"""
 
-
 from typing import Union
-
 
 from CleanEmonCore import CONFIG_FILE
 from CleanEmonCore.CouchDBAdapter import CouchDBAdapter
 from CleanEmonCore.models import EnergyData
-
 
 adapter = CouchDBAdapter(CONFIG_FILE)
 
@@ -40,3 +37,7 @@ def send_meta(field: str, meta: Union[int, float, bool, str, None], db: str = No
 
 def get_view_daily_consumption(date: str, db: str):
     return adapter.view_daily_consumption(date=date, db=db)
+
+
+def get_devices():
+    return adapter.get_devices()

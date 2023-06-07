@@ -1,19 +1,16 @@
 """This module defines the devices"""
 
-from CleanEmonCore import DEVICES_FILE
-from CleanEmonCore.json_utils.json_utils import verify_json, read_json_file
-from CleanEmonCore.json_utils.schemas import schema_devices
+from CleanEmonBackend.lib.DBConnector import get_devices
 
 
 class Devices:
     """Devices class used to just to check to parse the JSON file under the .CleanEmon directory."""
 
     def __init__(self):
-        self.devices = verify_json(read_json_file(DEVICES_FILE), schema_devices)['devices']
-        self.devices_set = set(self.devices)
+        self.devices_set = set(get_devices())
 
     def get_devices(self):
-        return self.devices
+        return self.devices_set
 
     def device_exist(self, device):
         if device in self.devices_set:
