@@ -1,50 +1,43 @@
 """This module contains a set of utilities used to transform and prepare data for torch-nilm inference"""
 
-import os
-import json
+from typing import Union
 
 from CleanEmonCore import CONFIG_FILE
-from CleanEmonCore.models import EnergyData
 from CleanEmonCore.CouchDBAdapter import CouchDBAdapter
-
-from .. import CACHE_DIR
+from CleanEmonCore.models import EnergyData
 
 adapter = CouchDBAdapter(CONFIG_FILE)
 
 
-def fetch_data(date_id: str, *, from_cache=False) -> EnergyData:
+def fetch_document(document: str, db: str):
+    return adapter._fetch_document(document=document, db=db)
 
-    if not os.path.exists(CACHE_DIR):
-        os.mkdir(CACHE_DIR)
 
-    name = date_id
+def create_document(document: str, db: str, data):
+    return adapter.create_document(name=document, db=db, initial_data=data)
 
-    cache_path = os.path.join(CACHE_DIR, name)
 
-    fetch_ok = False
-
-    energy_data = EnergyData()
-
-    if from_cache:
-        try:
-            with open(cache_path, "r") as fin:
-                raw_data = json.load(fin)
-                energy_data = EnergyData(raw_data["date"], raw_data["energy_data"])
-
-            print("Fetched data from cache")
-            fetch_ok = True
-        except OSError:
-            print("No cached data!")
-
-    if not from_cache or not fetch_ok:
-        energy_data = adapter.fetch_energy_data_by_date(date_id)
-
-        # Cache data for future use
-        with open(cache_path, "w") as fout:
-            json.dump(energy_data.as_json(string=False), fout)
+def fetch_data(date_id: str, *, db: str = None, down_sampling: bool = False) -> EnergyData:
+    energy_data = adapter.fetch_energy_data_by_date(date_id, db=db, down_sampling=down_sampling)
 
     return energy_data
 
 
-def send_data(date_id: str, data: EnergyData):
-    return adapter.update_energy_data_by_date(date_id, data)
+def get_last_value(db: str):
+    return adapter.get_last_energy_data_record(db)
+
+
+def send_data(date_id: str, data: EnergyData, db: str = None):
+    return adapter.update_energy_data_by_date(date_id, data, db=db)
+
+
+def send_meta(field: str, meta: Union[int, float, bool, str, None], db: str = None):
+    adapter.update_meta(field, value=meta, db=db)
+
+
+def get_view_daily_consumption(date: str, db: str):
+    return adapter.view_daily_consumption(date=date, db=db)
+
+
+def get_devices():
+    return adapter.get_devices()

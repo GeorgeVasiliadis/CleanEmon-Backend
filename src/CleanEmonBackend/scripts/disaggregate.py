@@ -3,18 +3,15 @@ from CleanEmonCore.CouchDBAdapter import CouchDBAdapter
 
 from CleanEmonBackend.Disaggregator.service import update
 
-adapter = CouchDBAdapter(CONFIG_FILE)
-print(f"You are working on database: {adapter.db}")
 
-
-def _disaggregate(date: str):
+def _disaggregate(date: str, device_id: str):
     print(f"Working on {date}")
     print("Disaggregating...")
-    update(date)
+    update(date, device_id=device_id)
     print("Done")
 
 
-def disaggregate(*dates: str, no_prompt=False):
+def disaggregate(*dates: str, device_id: str, no_prompt=False):
     for date in dates:
         if no_prompt:
             ans = True
@@ -22,6 +19,6 @@ def disaggregate(*dates: str, no_prompt=False):
             ans = input(f"Proceed with {date}? (<enter>: no) ")
 
         if ans:
-            _disaggregate(date)
+            _disaggregate(date, device_id)
         else:
             break
